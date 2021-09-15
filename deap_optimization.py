@@ -87,17 +87,27 @@ class DeapOptimizer:
             with open(self.checkpoint, "rb") as cp_file:
                 cp = pickle.load(cp_file)
                 self.population = cp["population"]
-                self.start_gen = cp["generation"]
-                self.halloffame = cp["halloffame"]
-                self.logbook = cp["logbook"]
-                random.setstate(cp["rndstate"])
-            print(f"We got a checkpoint! Starting from generation no. {self.start_gen}")
+                if self.population_size == len(self.population):
+                    self.start_gen = cp["generation"]
+                    self.halloffame = cp["halloffame"]
+                    self.logbook = cp["logbook"]
+                    random.setstate(cp["rndstate"])
+                    print(
+                        f"We got a checkpoint and the sizes coincide! Starting from generation no. {self.start_gen}"
+                    )
+                else:
+                    print(
+                        "We got a checkpoint, but it was for a different population size. Gotta start from scratch."
+                    )
+                    self.initialize_population()
         else:  # Otherwise start from scratch.
-            self.population = self.toolbox.population()
-            self.start_gen = 0
-            self.halloffame = tools.HallOfFame(maxsize=1)
-            self.logbook = tools.Logbook()
-            self.checkpoint = "checkpoint"
+            self.initialize_population()
+
+    def initialize_population(self):
+        self.population = self.toolbox.population()
+        self.start_gen = 0
+        self.halloffame = tools.HallOfFame(maxsize=1)
+        self.logbook = tools.Logbook()
 
     def evaluate_fitness_for_individuals(self, individuals):
         """
