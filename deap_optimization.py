@@ -178,7 +178,7 @@ class DeapOptimizer:
 
 if __name__ == "__main__":
     game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3])
-    optimizer = DeapOptimizer(population_size=100)
+    optimizer = DeapOptimizer(population_size=100, game_runner=game_runner)
     best_individual = optimizer.evolve(generations=20)
     print(f"The best individual is: {best_individual}")
     np.savetxt("best_individual.txt", best_individual)
