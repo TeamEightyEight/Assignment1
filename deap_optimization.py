@@ -181,5 +181,5 @@ if __name__ == "__main__":
     game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3])
     optimizer = DeapOptimizer(population_size=100, game_runner=game_runner)
     best_individual = optimizer.evolve(generations=20)
-    print(f"The best individual is: {best_individual}")
+    print("Evolution is finished! I saved the best individual in best_individual.txt")
     np.savetxt("best_individual.txt", best_individual)
