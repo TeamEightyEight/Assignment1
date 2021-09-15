@@ -13,7 +13,7 @@ LAYER_NODES = [20, 30, 10, 5]
 CX_PROBABILITY = 0.5
 MUT_PROBABILITY = 0.2
 POPULATION_SIZE = 100
-SAVING_FREQUENCY = 4
+SAVING_FREQUENCY = 10
 
 
 class DeapOptimizer:
@@ -170,7 +170,7 @@ class DeapOptimizer:
 
 
 if __name__ == "__main__":
-    optimizer = DeapOptimizer(population_size=5)
-    best_individual = optimizer.evolve(5)
+    optimizer = DeapOptimizer(population_size=100)
+    best_individual = optimizer.evolve(generations=40)
     print(f"The best individual is: {best_individual}")
     np.savetxt("best_individual.txt", best_individual)
