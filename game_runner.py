@@ -25,7 +25,7 @@ class GameRunner:
         self.experiment_name = (
             experiment_name
             if experiment_name != ""
-            else f"Run {datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+            else f"logs/Run {datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
         )
         # Creates a directory for the experiment's logs
         Path(self.experiment_name).mkdir(parents=True, exist_ok=True)
