@@ -89,7 +89,6 @@ class DeapOptimizer:
                 self.population = cp["population"]
                 if self.population_size == len(self.population):
                     self.start_gen = cp["generation"]
-                    self.halloffame = cp["halloffame"]
                     self.logbook = cp["logbook"]
                     random.setstate(cp["rndstate"])
                     print(
@@ -106,7 +105,6 @@ class DeapOptimizer:
     def initialize_population(self):
         self.population = self.toolbox.population()
         self.start_gen = 0
-        self.halloffame = tools.HallOfFame(maxsize=1)
         self.logbook = tools.Logbook()
 
     def evaluate_fitness_for_individuals(self, individuals):
@@ -139,7 +137,6 @@ class DeapOptimizer:
                 cp = dict(
                     population=self.population,
                     generation=g,
-                    halloffame=self.halloffame,
                     logbook=self.logbook,
                     rndstate=random.getstate(),
                 )
@@ -169,7 +166,6 @@ class DeapOptimizer:
             # Then evaluate their fitnesses.
             self.evaluate_fitness_for_individuals(invalid_ind)
             # Compute the stats for the generation, and save them to the logbook.
-            self.halloffame.update(self.population)
             self.record = stats.compile(self.population)
             self.logbook.record(gen=g, evals=len(invalid_ind), **self.record)
             print(f"Right now, the average fitness is: {self.record['avg']}")
