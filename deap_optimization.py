@@ -34,6 +34,7 @@ class DeapOptimizer:
         :param mut_probability: The probability of mutation. (float, 0<=x<=1)
         :param population_size: The size of the population. (int)
         :param checkpoint: The file name to save the checkpoint. (str)
+        :param game_runner: The EVOMAN game runner. (GameRunner)
         """
         self.layer_nodes = layer_nodes
         self.checkpoint = checkpoint
