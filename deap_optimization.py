@@ -24,6 +24,7 @@ class DeapOptimizer:
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
         checkpoint="checkpoint",
+        game_runner=GameRunner(PlayerController(LAYER_NODES)),
     ):
         """
         Initializes the Deap Optimizer.
@@ -41,6 +42,7 @@ class DeapOptimizer:
         self.cx_probability = cx_probability
         self.mut_probability = mut_probability
         self.population_size = population_size
+        self.game_runner = game_runner
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
         self.register_toolbox()
@@ -80,8 +82,7 @@ class DeapOptimizer:
         self.toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Finally, we have to define the evaluation function. To do so, we gotta set up an evoman environment.
-        game_runner = GameRunner(PlayerController(LAYER_NODES))
-        self.toolbox.register("evaluate", game_runner.evaluate)
+        self.toolbox.register("evaluate", self.game_runner.evaluate)
         # If the checkpoint file exists, load it.
         if os.path.isfile(self.checkpoint):
             with open(self.checkpoint, "rb") as cp_file:
@@ -176,7 +177,8 @@ class DeapOptimizer:
 
 
 if __name__ == "__main__":
+    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3])
     optimizer = DeapOptimizer(population_size=100)
-    best_individual = optimizer.evolve(generations=40)
+    best_individual = optimizer.evolve(generations=20)
     print(f"The best individual is: {best_individual}")
     np.savetxt("best_individual.txt", best_individual)
