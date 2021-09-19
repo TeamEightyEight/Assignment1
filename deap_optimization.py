@@ -144,6 +144,7 @@ class DeapOptimizer:
                 )
                 with open(self.checkpoint, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
+
             # Select the next generation individuals
             offspring = self.toolbox.select(self.population, len(self.population))
 
@@ -154,6 +155,8 @@ class DeapOptimizer:
             for i in range(0, int(len(offspring) * CX_PROBABILITY), 2):
                 child1, child2 = tuple(random.choices(offspring, k=2))
                 self.toolbox.mate(child1, child2)
+
+                # fitness values of the children, must be recalculated later
                 del child1.fitness.values
                 del child2.fitness.values
 
