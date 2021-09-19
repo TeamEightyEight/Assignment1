@@ -67,8 +67,9 @@ class GameRunner:
         Method to actually run a play simulation. Returns the fitness only.
         :param individual: one individual from the population
         """
-        f, p, e, t = self.env.play(pcont=individual)
-        return f
+
+        fitness, player_life, enemy_life, time = self.env.play(pcont=individual)
+        return fitness
 
     def evaluate(self, individual):
         """
