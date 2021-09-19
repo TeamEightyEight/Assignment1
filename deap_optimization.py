@@ -1,4 +1,4 @@
-from deap import base, creator, tools
+from deap import base, creator, tools, algorithms
 import numpy as np
 import random
 from game_runner import GameRunner
@@ -13,6 +13,7 @@ LAYER_NODES = [20, 30, 10, 5]
 CX_PROBABILITY = 0.5
 MUT_PROBABILITY = 0.2
 POPULATION_SIZE = 100
+GENERATIONS = 20
 SAVING_FREQUENCY = 5
 
 
@@ -24,6 +25,7 @@ class DeapOptimizer:
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
         checkpoint="checkpoint",
+        parallel=False,
         game_runner=GameRunner(PlayerController(LAYER_NODES)),
     ):
         """
@@ -44,6 +46,7 @@ class DeapOptimizer:
         self.mut_probability = mut_probability
         self.population_size = population_size
         self.game_runner = game_runner
+        self.parallel = parallel
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
         self.register_toolbox()
@@ -81,11 +84,12 @@ class DeapOptimizer:
         self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
         self.toolbox.register("select", tools.selTournament, tournsize=3)
+        self.toolbox.register("select_survivors", tools.selBest)
 
         # Finally, we have to define the evaluation function. To do so, we gotta set up an evoman environment.
         self.toolbox.register("evaluate", self.game_runner.evaluate)
-        # If the checkpoint file exists, load it.
-        if os.path.isfile(self.checkpoint):
+        if not self.parallel and os.path.isfile(self.checkpoint):
+            # If the checkpoint file exists, load it.
             with open(self.checkpoint, "rb") as cp_file:
                 cp = pickle.load(cp_file)
                 self.population = cp["population"]
@@ -101,7 +105,7 @@ class DeapOptimizer:
                         "We got a checkpoint, but it was for a different population size. Gotta start from scratch."
                     )
                     self.initialize_population()
-        else:  # Otherwise start from scratch.
+        else:
             self.initialize_population()
 
     def initialize_population(self):
@@ -130,11 +134,14 @@ class DeapOptimizer:
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", np.mean)
         stats.register("max", np.max)
+        stats.register("min", np.min)
+        stats.register("std", np.std)
         stats.register("best_individual", np.argmax)
         for g in range(generations):
-            print(f"👨‍👩‍👧 Generation {g} is about to give birth to children! 👨‍👩‍👧")
+            if not self.parallel:
+                print(f"👨‍👩‍👧 Generation {g} is about to give birth to children! 👨‍👩‍👧")
             # We save every SAVING_FREQUENCY generations.
-            if g % SAVING_FREQUENCY == 0:
+            if g % SAVING_FREQUENCY == 0 and not self.parallel:
                 # Fill the dictionary using the dict(key=value[, ...]) constructor
                 cp = dict(
                     population=self.population,
@@ -145,41 +152,44 @@ class DeapOptimizer:
                 with open(self.checkpoint, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
             # Select the next generation individuals
-            offspring = self.toolbox.select(self.population, len(self.population))
+            offspring = algorithms.varAnd(
+                self.population, self.toolbox, CX_PROBABILITY, MUT_PROBABILITY
+            )
+            # offspring = self.toolbox.select(self.population, len(self.population))
 
             # Clone the selected individuals
-            offspring = [self.toolbox.clone(individual) for individual in offspring]
-
-            # Let's mate two random individuals of the offspring, repeating the process for the prob. of this happening*the individuals
-            for i in range(0, int(len(offspring) * CX_PROBABILITY), 2):
-                child1, child2 = tuple(random.choices(offspring, k=2))
-                self.toolbox.mate(child1, child2)
-                del child1.fitness.values
-                del child2.fitness.values
+            # offspring = [self.toolbox.clone(individual) for individual in offspring]
 
             # Apply mutation on the offspring
-            for mutant in offspring:
-                if random.random() < MUT_PROBABILITY:
-                    self.toolbox.mutate(mutant)
-                    del mutant.fitness.values
+            # for mutant in offspring:
+            #     if random.random() < MUT_PROBABILITY:
+            #         self.toolbox.mutate(mutant)
+            #         del mutant.fitness.values
 
             # Evaluate the individuals with an invalid fitness
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
             # Then evaluate their fitnesses.
             self.evaluate_fitness_for_individuals(invalid_ind)
+            offspring = self.toolbox.select_survivors(
+                self.population + offspring, len(self.population)
+            )
             # Compute the stats for the generation, and save them to the logbook.
             self.record = stats.compile(self.population)
             self.logbook.record(gen=g, evals=len(invalid_ind), **self.record)
-            print(f"Right now, the average fitness is: {self.record['avg']}")
+            if not self.parallel:
+                print(f"Right now, the average fitness is: {self.record['avg']}")
             # The population is entirely replaced by the offspring
             self.population = offspring
         # Return the best individual
-        return self.population[self.record["best_individual"]]
+        return self.record["max"], self.population[self.record["best_individual"]]
 
 
 if __name__ == "__main__":
     game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3])
-    optimizer = DeapOptimizer(population_size=100, game_runner=game_runner)
-    best_individual = optimizer.evolve(generations=20)
-    print("Evolution is finished! I saved the best individual in best_individual.txt")
-    np.savetxt("best_individual.txt", best_individual)
+    optimizer = DeapOptimizer(population_size=POPULATION_SIZE, game_runner=game_runner)
+    max_fitness, best_individual = optimizer.evolve(generations=GENERATIONS)
+    if not optimizer.parallel:
+        print(
+            "Evolution is finished! I saved the best individual in best_individual.txt"
+        )
+        np.savetxt("best_individual.txt", best_individual)
