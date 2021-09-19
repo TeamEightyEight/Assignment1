@@ -1,13 +1,15 @@
-from demo_controller import sigmoid_activation
 import sys
 
 sys.path.insert(0, "evoman")
 from controller import Controller
 import numpy as np
+import warnings
 
 
 def sigmoid_activation(x):
-    return 1.0 / (1.0 + np.exp(-x))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return 1 / (1 + np.exp(-x))
 
 
 class PlayerController(Controller):
