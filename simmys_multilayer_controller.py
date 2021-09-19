@@ -15,7 +15,6 @@ class PlayerController(Controller):
         """
         Initializes the controller for evoman.
 
-        :param weights: The weights for the Neural Network.
         :param nodes_no: List containing the no. of nodes for each layer (excluding output)
         """
         self.nodes_no = nodes_no

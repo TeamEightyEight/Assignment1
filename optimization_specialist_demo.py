@@ -270,7 +270,7 @@ for i in range(ini_g+1, gens):
     file_aux.close()
 
     # saves generation number
-    file_aux  = open(experiment_name+'/gen.txt','w')
+    file_aux = open(experiment_name+'/gen.txt','w')
     file_aux.write(str(i))
     file_aux.close()
 

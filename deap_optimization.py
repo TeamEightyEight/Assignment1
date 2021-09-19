@@ -28,13 +28,13 @@ class DeapOptimizer:
     ):
         """
         Initializes the Deap Optimizer.
-        :param layer_nodes: The number of nodes in each layer. (list)
-        :param generations: The number of generations to run the GA for. (int)
-        :param cx_probability: The probability of crossover. (float, 0<=x<=1)
-        :param mut_probability: The probability of mutation. (float, 0<=x<=1)
-        :param population_size: The size of the population. (int)
-        :param checkpoint: The file name to save the checkpoint. (str)
-        :param game_runner: The EVOMAN game runner. (GameRunner)
+            :param layer_nodes: The number of nodes in each layer. (list)
+            :param generations: The number of generations to run the GA for. (int)
+            :param cx_probability: The probability of crossover. (float, 0<=x<=1)
+            :param mut_probability: The probability of mutation. (float, 0<=x<=1)
+            :param population_size: The size of the population. (int)
+            :param checkpoint: The file name to save the checkpoint. (str)
+            :param game_runner: The EVOMAN game runner. (GameRunner)
         """
         self.layer_nodes = layer_nodes
         self.checkpoint = checkpoint
