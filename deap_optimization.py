@@ -15,6 +15,9 @@ MUT_PROBABILITY = 0.2
 POPULATION_SIZE = 100
 GENERATIONS = 20
 SAVING_FREQUENCY = 5
+TOURNSIZE = 5
+LAMBDA = 3
+
 
 
 class DeapOptimizer:
@@ -24,16 +27,18 @@ class DeapOptimizer:
         cx_probability=CX_PROBABILITY,
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
+        lambda_offspring = LAMBDA,
         checkpoint="checkpoint",
         parallel=False,
-        game_runner=GameRunner(PlayerController(LAYER_NODES)),
+        game_runner=GameRunner(PlayerController(LAYER_NODES), headless=False),
     ):
         """
         Initializes the Deap Optimizer.
             :param layer_nodes: The number of nodes in each layer. (list)
             :param generations: The number of generations to run the GA for. (int)
             :param cx_probability: The probability of crossover. (float, 0<=x<=1)
-            :param mut_probability: The probability of mutation. (float, 0<=x<=1)
+            :param mut_probability: The probability of mutation. (float, 0<=x<=1)ù
+            :param lambda_offspring: The scaling factor of the offspring size based on the population size
             :param population_size: The size of the population. (int)
             :param checkpoint: The file name to save the checkpoint. (str)
             :param game_runner: The EVOMAN game runner. (GameRunner)
@@ -45,6 +50,7 @@ class DeapOptimizer:
         self.cx_probability = cx_probability
         self.mut_probability = mut_probability
         self.population_size = population_size
+        self.lambda_offspring = lambda_offspring
         self.game_runner = game_runner
         self.parallel = parallel
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -83,7 +89,7 @@ class DeapOptimizer:
 
         self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
-        self.toolbox.register("select", tools.selTournament, tournsize=3)
+        self.toolbox.register("select_parents", tools.selTournament, tournsize=TOURNSIZE)
         self.toolbox.register("select_survivors", tools.selBest)
 
         # Finally, we have to define the evaluation function. To do so, we gotta set up an evoman environment.
@@ -152,28 +158,42 @@ class DeapOptimizer:
                 with open(self.checkpoint, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
 
-            # Select the next generation individuals
-            offspring = algorithms.varAnd(
-                self.population, self.toolbox, CX_PROBABILITY, MUT_PROBABILITY
-            )
-            # offspring = self.toolbox.select(self.population, len(self.population))
+            # create a new offspring of size LAMBDA*len(population)
+            # literature advise to use LAMBDA=3
+            offspring = []
+            for i in range(1, self.lambda_offspring * len(self.population), 2):
 
-            # Clone the selected individuals
-            # offspring = [self.toolbox.clone(individual) for individual in offspring]
+                # selection of 2 parents with replacement
+                parents = self.toolbox.select_parents(self.population, k=2)
 
-            # Apply mutation on the offspring
-            # for mutant in offspring:
-            #     if random.random() < MUT_PROBABILITY:
-            #         self.toolbox.mutate(mutant)
-            #         del mutant.fitness.values
+                # clone the 2 parents in the new offspring
+                offspring.append(self.toolbox.clone(parents[0]))
+                offspring.append(self.toolbox.clone(parents[1]))
+
+                # apply mutation between the parents in a non-deterministic way
+                if random.random() < self.cx_probability:
+                    offspring[i - 1], offspring[i] = self.toolbox.mate(offspring[i - 1], offspring[i])
+                    del offspring[i - 1].fitness.values, offspring[i].fitness.values
+
+                # apply mutation to the 2 new children
+                if random.random() < self.mut_probability:
+                    offspring[i - 1], = self.toolbox.mutate(offspring[i - 1])
+                    del offspring[i - 1].fitness.values
+
+                    offspring[i], = self.toolbox.mutate(offspring[i])
+                    del offspring[i].fitness.values
 
             # Evaluate the individuals with an invalid fitness
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
             # Then evaluate their fitnesses.
             self.evaluate_fitness_for_individuals(invalid_ind)
+
+            # Select the survivors for next generation of individuals between the old and the new generation
+            # (fitness-based selection)
             offspring = self.toolbox.select_survivors(
                 self.population + offspring, len(self.population)
             )
+
             # Compute the stats for the generation, and save them to the logbook.
             self.record = stats.compile(self.population)
             self.logbook.record(gen=g, evals=len(invalid_ind), **self.record)
