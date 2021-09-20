@@ -10,12 +10,19 @@ import sys
 sys.path.insert(0, "evoman")
 from environment import Environment
 import numpy as np
+import os
 from pathlib import Path
 
 
 class GameRunner:
     def __init__(
-        self, controller, experiment_name="", enemies=[2], level=2, speed="fastest"
+        self,
+        controller,
+        experiment_name="",
+        enemies=[2],
+        level=2,
+        speed="fastest",
+        headless=True,
     ):
         """
         This class instantiates an EVOMAN environment, runs the game and evaluates the fitness.
@@ -31,15 +38,28 @@ class GameRunner:
         Path(self.experiment_name).mkdir(parents=True, exist_ok=True)
         self.level = level
         self.speed = speed
-        self.env = Environment(
-            experiment_name=self.experiment_name,
-            enemies=self.enemies,
-            playermode="ai",
-            player_controller=self.controller,
-            enemymode="static",
-            level=self.level,
-            speed=self.speed,
-        )
+        if headless:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"
+            self.env = Environment(
+                experiment_name=self.experiment_name,
+                enemies=self.enemies,
+                playermode="ai",
+                player_controller=self.controller,
+                enemymode="static",
+                level=self.level,
+                speed=self.speed,
+                logs="off",
+            )
+        else:
+            self.env = Environment(
+                experiment_name=self.experiment_name,
+                enemies=self.enemies,
+                playermode="ai",
+                player_controller=self.controller,
+                enemymode="static",
+                level=self.level,
+                speed=self.speed,
+            )
         self.env.state_to_log()
 
     def simulation(self, individual):
@@ -47,8 +67,9 @@ class GameRunner:
         Method to actually run a play simulation. Returns the fitness only.
         :param individual: one individual from the population
         """
-        f, p, e, t = self.env.play(pcont=individual)
-        return f
+
+        fitness, player_life, enemy_life, time = self.env.play(pcont=individual)
+        return fitness
 
     def evaluate(self, individual):
         """

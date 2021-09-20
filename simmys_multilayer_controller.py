@@ -1,13 +1,15 @@
-from demo_controller import sigmoid_activation
 import sys
 
 sys.path.insert(0, "evoman")
 from controller import Controller
 import numpy as np
+import warnings
 
 
 def sigmoid_activation(x):
-    return 1.0 / (1.0 + np.exp(-x))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return 1 / (1 + np.exp(-x))
 
 
 class PlayerController(Controller):
@@ -15,7 +17,6 @@ class PlayerController(Controller):
         """
         Initializes the controller for evoman.
 
-        :param weights: The weights for the Neural Network.
         :param nodes_no: List containing the no. of nodes for each layer (excluding output)
         """
         self.nodes_no = nodes_no
