@@ -12,18 +12,25 @@ from simmys_multilayer_controller import PlayerController
 from hyperopt import hp, fmin, tpe, space_eval
 from hyperopt import SparkTrials, STATUS_OK
 
+import faulthandler
+
+faulthandler.enable()
+
 
 def test_hyperparameters_vector(args):
     """
     Tests an hyperparameter vector with DeapOptimizer
     """
     layer_nodes = [20] + [int(nodes) for nodes in list(args["layer_nodes"])] + [5]
-    game_runner = GameRunner(PlayerController(layer_nodes), enemies=[3])
+    game_runner = GameRunner(PlayerController(layer_nodes), enemies=[3], headless=True)
     optimizer = DeapOptimizer(
+        layer_nodes=layer_nodes,
         population_size=int(args["population_size"]),
         game_runner=game_runner,
         cx_probability=args["cx_probability"],
         mut_probability=args["mut_probability"],
+        mutation_sigma=args["mutation_sigma"],
+        mutation_indpb=args["mutation_indpb"],
         parallel=True,
     )
     max_fitness, best_individual = optimizer.evolve(
@@ -42,6 +49,8 @@ space = hp.choice(
             "mut_probability": hp.uniform("mut_probability_1", 0, 1),
             "generations": hp.quniform("generations_1", 10, 100, 1),
             "layer_nodes": [hp.quniform("layer_1_1", 10, 100, 1)],
+            "mutation_sigma": hp.uniform("mutation_sigma_1", 0, 1),
+            "mutation_indpb": hp.uniform("mutation_indpb_1", 0, 1),
         },
         {
             "name": "2-layered NN",
@@ -53,6 +62,8 @@ space = hp.choice(
                 hp.quniform("layer_1_2", 10, 30, 1),
                 hp.quniform("layer_2_2", 10, 30, 1),
             ],
+            "mutation_sigma": hp.uniform("mutation_sigma_2", 0, 1),
+            "mutation_indpb": hp.uniform("mutation_indpb_2", 0, 1),
         },
         {
             "name": "3-layered NN",
@@ -65,6 +76,8 @@ space = hp.choice(
                 hp.quniform("layer_2_3", 10, 30, 1),
                 hp.quniform("layer_3_3", 10, 30, 1),
             ],
+            "mutation_sigma": hp.uniform("mutation_sigma_3", 0, 1),
+            "mutation_indpb": hp.uniform("mutation_indpb_3", 0, 1),
         },
         {
             "name": "4-layered NN",
@@ -78,15 +91,17 @@ space = hp.choice(
                 hp.quniform("layer_3_4", 10, 30, 1),
                 hp.quniform("layer_4_4", 10, 30, 1),
             ],
+            "mutation_sigma": hp.uniform("mutation_sigma_4", 0, 1),
+            "mutation_indpb": hp.uniform("mutation_indpb_4", 0, 1),
         },
     ],
 )
-spark_trials = SparkTrials()
+# spark_trials = SparkTrials()
 best = fmin(
     test_hyperparameters_vector,
     space,
-    trials=spark_trials,
+    # trials=spark_trials,
     algo=tpe.suggest,
-    max_evals=100,
+    max_evals=3,
 )
 print(best)

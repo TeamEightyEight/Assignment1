@@ -49,6 +49,7 @@ class GameRunner:
                 level=self.level,
                 speed=self.speed,
                 logs="off",
+                sound="off",
             )
         else:
             self.env = Environment(
