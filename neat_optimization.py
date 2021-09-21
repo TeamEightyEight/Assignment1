@@ -1,7 +1,3 @@
-"""
-2-input XOR example -- this is most likely the simplest possible example.
-"""
-
 from __future__ import print_function
 import neat
 
@@ -10,7 +6,6 @@ import sys
 sys.path.insert(0, 'evoman')
 from environment import Environment
 from neat_controller import player_controller
-from neat.graphs import feed_forward_layers
 
 # imports other libs
 import time
@@ -20,16 +15,14 @@ import glob, os
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
-        #genome.fitness = 4.0
-        net = neat.nn.FeedForwardNetwork.create(genome, config)
-        
-        genome.input_keys = config.genome_config.input_keys
-        genome.output_keys = config.genome_config.output_keys
 
-        output = simulation(env,genome)
-        #output = net.activate(simulation(env,genome))
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+
+        output = simulation(env,net)
+
         genome.fitness = output
-        
+        print("genome.fitness={!r}".format(output))
+    return genome.fitness
 
 # runs simulation
 def simulation(env,x):
