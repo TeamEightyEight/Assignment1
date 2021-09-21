@@ -22,6 +22,7 @@ def test_hyperparameters_vector(args):
     Tests an hyperparameter vector with DeapOptimizer
     """
     layer_nodes = [20] + [int(nodes) for nodes in list(args["layer_nodes"])] + [5]
+    print(f"Now trying combination {args}")
     game_runner = GameRunner(PlayerController(layer_nodes), enemies=[3], headless=True)
     optimizer = DeapOptimizer(
         layer_nodes=layer_nodes,
@@ -44,20 +45,20 @@ space = hp.choice(
     [
         {
             "name": "1-layered NN",
-            "population_size": hp.quniform("population_size_1", 100, 200, 1),
+            "population_size": hp.quniform("population_size_1", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_1", 0, 1),
             "mut_probability": hp.uniform("mut_probability_1", 0, 1),
-            "generations": hp.quniform("generations_1", 10, 100, 1),
+            "generations": hp.quniform("generations_1", 5, 25, 1),
             "layer_nodes": [hp.quniform("layer_1_1", 10, 100, 1)],
             "mutation_sigma": hp.uniform("mutation_sigma_1", 0, 1),
             "mutation_indpb": hp.uniform("mutation_indpb_1", 0, 1),
         },
         {
             "name": "2-layered NN",
-            "population_size": hp.quniform("population_size_2", 100, 200, 1),
+            "population_size": hp.quniform("population_size_2", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_2", 0, 1),
             "mut_probability": hp.uniform("mut_probability_2", 0, 1),
-            "generations": hp.quniform("generations_2", 10, 100, 1),
+            "generations": hp.quniform("generations_2", 5, 25, 1),
             "layer_nodes": [
                 hp.quniform("layer_1_2", 10, 30, 1),
                 hp.quniform("layer_2_2", 10, 30, 1),
@@ -67,10 +68,10 @@ space = hp.choice(
         },
         {
             "name": "3-layered NN",
-            "population_size": hp.quniform("population_size_3", 100, 200, 1),
+            "population_size": hp.quniform("population_size_3", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_3", 0, 1),
             "mut_probability": hp.uniform("mut_probability_3", 0, 1),
-            "generations": hp.quniform("generations_3", 10, 100, 1),
+            "generations": hp.quniform("generations_3", 5, 25, 1),
             "layer_nodes": [
                 hp.quniform("layer_1_3", 10, 30, 1),
                 hp.quniform("layer_2_3", 10, 30, 1),
@@ -81,10 +82,10 @@ space = hp.choice(
         },
         {
             "name": "4-layered NN",
-            "population_size": hp.quniform("population_size_4", 100, 200, 1),
+            "population_size": hp.quniform("population_size_4", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_4", 0, 1),
             "mut_probability": hp.uniform("mut_probability_4", 0, 1),
-            "generations": hp.quniform("generations_4", 10, 100, 1),
+            "generations": hp.quniform("generations_4", 5, 25, 1),
             "layer_nodes": [
                 hp.quniform("layer_1_4", 10, 30, 1),
                 hp.quniform("layer_2_4", 10, 30, 1),

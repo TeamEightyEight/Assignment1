@@ -90,9 +90,6 @@ class DeapOptimizer:
             self.toolbox.attr_float,
             n=weights_no + self.bias_no,
         )
-        print(
-            f"weights_no is {weights_no} and bias_no is {self.bias_no} and layer nodes are {self.layer_nodes}"
-        )
         # Note that an individual is a flattened array of the weights.
         # We'll now create a population of individuals in the same way. We can now use a simple list.
         self.toolbox.register(
