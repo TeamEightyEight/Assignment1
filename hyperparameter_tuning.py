@@ -97,11 +97,11 @@ space = hp.choice(
         },
     ],
 )
-# spark_trials = SparkTrials()
+spark_trials = SparkTrials()
 best = fmin(
     test_hyperparameters_vector,
     space,
-    # trials=spark_trials,
+    trials=spark_trials,
     algo=tpe.suggest,
     max_evals=3,
 )
