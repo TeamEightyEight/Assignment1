@@ -103,6 +103,6 @@ best = fmin(
     space,
     trials=spark_trials,
     algo=tpe.suggest,
-    max_evals=3,
+    max_evals=30,
 )
 print(best)
