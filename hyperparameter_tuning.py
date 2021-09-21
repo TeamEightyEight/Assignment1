@@ -49,7 +49,7 @@ space = hp.choice(
             "cx_probability": hp.uniform("cx_probability_1", 0, 1),
             "mut_probability": hp.uniform("mut_probability_1", 0, 1),
             "generations": hp.quniform("generations_1", 5, 25, 1),
-            "layer_nodes": [hp.quniform("layer_1_1", 10, 100, 1)],
+            "layer_nodes": [hp.quniform("layer_1_1", 10, 30, 1)],
             "mutation_sigma": hp.uniform("mutation_sigma_1", 0, 1),
             "mutation_indpb": hp.uniform("mutation_indpb_1", 0, 1),
         },
