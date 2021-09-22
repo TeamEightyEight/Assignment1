@@ -7,7 +7,6 @@ import os
 from tqdm import tqdm
 from simmys_multilayer_controller import PlayerController
 
-
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
 LAYER_NODES = [20, 19, 28, 20, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
