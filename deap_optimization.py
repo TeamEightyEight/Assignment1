@@ -9,15 +9,15 @@ from simmys_multilayer_controller import PlayerController
 
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 30, 10, 17, 17, 5]
+LAYER_NODES = [20, 19, 28, 20, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
-CX_PROBABILITY = 0.5
-MUT_PROBABILITY = 0.2
+CX_PROBABILITY = 0.79
+MUT_PROBABILITY = 0.54
 MUTATION_MU = 0
-MUTATION_SIGMA = 1
-MUTATION_INDPB = 0.2
-POPULATION_SIZE = 5
-GENERATIONS = 20
+MUTATION_SIGMA = 0.93
+MUTATION_INDPB = 0.76
+POPULATION_SIZE = 94
+GENERATIONS = 13
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
 LAMBDA = 3
