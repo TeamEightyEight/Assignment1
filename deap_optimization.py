@@ -12,11 +12,12 @@ from simmys_multilayer_controller import PlayerController
 LAYER_NODES = [20, 19, 28, 20, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
 CX_PROBABILITY = 0.79
+CX_ALPHA = 0.5
 MUT_PROBABILITY = 0.54
 MUTATION_MU = 0
 MUTATION_SIGMA = 0.93
 MUTATION_INDPB = 0.76
-POPULATION_SIZE = 94
+POPULATION_SIZE = 10
 GENERATIONS = 13
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
@@ -28,6 +29,7 @@ class DeapOptimizer:
         self,
         layer_nodes=LAYER_NODES,
         cx_probability=CX_PROBABILITY,
+        cx_alpha=CX_ALPHA,
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
         lambda_offspring=LAMBDA,
@@ -65,6 +67,7 @@ class DeapOptimizer:
         self.mutation_mu = mutation_mu
         self.mutation_sigma = mutation_sigma
         self.mutation_indpb = mutation_indpb
+        self.cx_alpha = cx_alpha
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
         self.register_toolbox()
@@ -102,7 +105,7 @@ class DeapOptimizer:
 
         self.population = self.toolbox.population()
 
-        self.toolbox.register("mate", tools.cxTwoPoint)
+        self.toolbox.register("mate", tools.cxBlend, alpha=self.cx_alpha)
         self.toolbox.register(
             "mutate",
             tools.mutGaussian,
