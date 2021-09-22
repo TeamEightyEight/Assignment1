@@ -9,15 +9,16 @@ from simmys_multilayer_controller import PlayerController
 
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 2, 5]
+LAYER_NODES = [20, 19, 28, 20, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
-CX_PROBABILITY = 0.8
-MUT_PROBABILITY = 0.2
-MUTATION_MU = 0.0
-MUTATION_STEP_SIZE = 5.0
-MUTATION_INDPB = 0.2
-POPULATION_SIZE = 3
-GENERATIONS = 20
+CX_PROBABILITY = 0.79
+CX_ALPHA = 0.5
+MUT_PROBABILITY = 0.54
+MUTATION_MU = 0
+MUTATION_STEP_SIZE = 3.0
+MUTATION_INDPB = 0.76
+POPULATION_SIZE = 10
+GENERATIONS = 13
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
 LAMBDA = 7
@@ -30,6 +31,7 @@ class DeapOptimizer:
         self,
         layer_nodes=LAYER_NODES,
         cx_probability=CX_PROBABILITY,
+        cx_alpha=CX_ALPHA,
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
         lambda_offspring=LAMBDA,
@@ -67,6 +69,7 @@ class DeapOptimizer:
         self.mutation_mu = mutation_mu
         self.mutation_step_size = mutation_step_size
         self.mutation_indpb = mutation_indpb
+        self.cx_alpha = cx_alpha
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 
         # at each individual it is assigned an initial mutation step size
@@ -110,8 +113,7 @@ class DeapOptimizer:
 
         self.population = self.toolbox.population()
 
-        self.toolbox.register("mate", tools.cxTwoPoint)
-
+        self.toolbox.register("mate", tools.cxBlend, alpha=self.cx_alpha)
         self.toolbox.register(
             "mutate",
             tools.mutGaussian,

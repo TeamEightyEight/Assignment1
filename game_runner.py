@@ -50,6 +50,7 @@ class GameRunner:
                 speed=self.speed,
                 logs="off",
                 sound="off",
+                randomini="true",
             )
         else:
             self.env = Environment(
@@ -60,6 +61,7 @@ class GameRunner:
                 enemymode="static",
                 level=self.level,
                 speed=self.speed,
+                randomini="true",
             )
         self.env.state_to_log()
 

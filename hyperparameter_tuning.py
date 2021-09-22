@@ -26,6 +26,7 @@ def test_hyperparameters_vector(args):
         population_size=int(args["population_size"]),
         game_runner=game_runner,
         cx_probability=args["cx_probability"],
+        cx_alpha=args["cx_alpha"],
         mut_probability=args["mut_probability"],
         mutation_sigma=args["mutation_sigma"],
         mutation_indpb=args["mutation_indpb"],
@@ -44,6 +45,7 @@ space = hp.choice(
             "name": "1-layered NN",
             "population_size": hp.quniform("population_size_1", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_1", 0, 1),
+            "cx_alpha": hp.uniform("cx_alpha_1", 0, 1),
             "mut_probability": hp.uniform("mut_probability_1", 0, 1),
             "generations": hp.quniform("generations_1", 5, 25, 1),
             "layer_nodes": [hp.quniform("layer_1_1", 10, 30, 1)],
@@ -54,6 +56,7 @@ space = hp.choice(
             "name": "2-layered NN",
             "population_size": hp.quniform("population_size_2", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_2", 0, 1),
+            "cx_alpha": hp.uniform("cx_alpha_2", 0, 1),
             "mut_probability": hp.uniform("mut_probability_2", 0, 1),
             "generations": hp.quniform("generations_2", 5, 25, 1),
             "layer_nodes": [
@@ -67,6 +70,7 @@ space = hp.choice(
             "name": "3-layered NN",
             "population_size": hp.quniform("population_size_3", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_3", 0, 1),
+            "cx_alpha": hp.uniform("cx_alpha_3", 0, 1),
             "mut_probability": hp.uniform("mut_probability_3", 0, 1),
             "generations": hp.quniform("generations_3", 5, 25, 1),
             "layer_nodes": [
@@ -81,6 +85,7 @@ space = hp.choice(
             "name": "4-layered NN",
             "population_size": hp.quniform("population_size_4", 50, 100, 1),
             "cx_probability": hp.uniform("cx_probability_4", 0, 1),
+            "cx_alpha": hp.uniform("cx_alpha_4", 0, 1),
             "mut_probability": hp.uniform("mut_probability_4", 0, 1),
             "generations": hp.quniform("generations_4", 5, 25, 1),
             "layer_nodes": [
@@ -100,6 +105,6 @@ best = fmin(
     space,
     trials=spark_trials,
     algo=tpe.suggest,
-    max_evals=30,
+    max_evals=50,
 )
 print(best)
