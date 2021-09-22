@@ -9,19 +9,21 @@ from simmys_multilayer_controller import PlayerController
 
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 30, 10, 17, 17, 5]
+LAYER_NODES = [20, 2, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
-CX_PROBABILITY = 0.5
+CX_PROBABILITY = 0.8
 MUT_PROBABILITY = 0.2
-MUTATION_MU = 0
-MUTATION_SIGMA = 1
+MUTATION_MU = 0.0
+MUTATION_STEP_SIZE = 5.0
 MUTATION_INDPB = 0.2
-POPULATION_SIZE = 5
+POPULATION_SIZE = 3
 GENERATIONS = 20
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
-LAMBDA = 3
-
+LAMBDA = 7
+MIN_VALUE_INDIVIDUAL = -1
+MAX_VALUE_INDIVIDUAL = 1
+EPSILON_UNCORRELATED_MUTATION = 1.e-6
 
 class DeapOptimizer:
     def __init__(
@@ -32,7 +34,7 @@ class DeapOptimizer:
         population_size=POPULATION_SIZE,
         lambda_offspring=LAMBDA,
         mutation_mu=MUTATION_MU,
-        mutation_sigma=MUTATION_SIGMA,
+        mutation_step_size=MUTATION_STEP_SIZE,
         mutation_indpb=MUTATION_INDPB,
         checkpoint="checkpoint",
         parallel=False,
@@ -46,7 +48,7 @@ class DeapOptimizer:
             :param mut_probability: The probability of mutation. (float, 0<=x<=1)ù
             :param lambda_offspring: The scaling factor of the offspring size based on the population size
             :param mutation_mu: The mean of the normal distribution used for mutation. (float)
-            :param mutation_sigma: The standard deviation of the normal distribution used for mutation. (float)
+            :param mutation_step_size: The initial standard deviation of the normal distribution used for mutation. (float)
             :param mutation_indpb: The probability of an individual being mutated. (float, 0<=x<=1)
             :param population_size: The size of the population. (int)
             :param checkpoint: The file name to save the checkpoint. (str)
@@ -63,10 +65,12 @@ class DeapOptimizer:
         self.game_runner = game_runner
         self.parallel = parallel
         self.mutation_mu = mutation_mu
-        self.mutation_sigma = mutation_sigma
+        self.mutation_step_size = mutation_step_size
         self.mutation_indpb = mutation_indpb
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-        creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
+
+        # at each individual it is assigned an initial mutation step size
+        creator.create("Individual", np.ndarray, fitness=creator.FitnessMax, mutation_step = self.mutation_step_size)
         self.register_toolbox()
 
     def register_toolbox(self):
@@ -74,8 +78,10 @@ class DeapOptimizer:
         Registers the aliases for the Deap Optimizer using Toolbox
         """
         self.toolbox = base.Toolbox()
+
         # Register the initialization function for an individual.
         self.toolbox.register("attr_float", random.random)
+
         """
         The following associates the individual alias to the initRepeat function, which creates WEIGHTS_NO 
         individuals using attr_float, the random float function we just created.
@@ -83,12 +89,14 @@ class DeapOptimizer:
         weights_no = 0
         for i in range(0, len(self.layer_nodes) - 1):
             weights_no += self.layer_nodes[i] * self.layer_nodes[i + 1]
+        individual_size = weights_no + self.bias_no
+
         self.toolbox.register(
             "individual",
             tools.initRepeat,
             creator.Individual,
             self.toolbox.attr_float,
-            n=weights_no + self.bias_no,
+            n=individual_size,
         )
         # Note that an individual is a flattened array of the weights.
         # We'll now create a population of individuals in the same way. We can now use a simple list.
@@ -103,12 +111,23 @@ class DeapOptimizer:
         self.population = self.toolbox.population()
 
         self.toolbox.register("mate", tools.cxTwoPoint)
+
         self.toolbox.register(
             "mutate",
             tools.mutGaussian,
             mu=self.mutation_mu,
-            sigma=self.mutation_sigma,
             indpb=self.mutation_indpb,
+        )
+
+        # compute the learning rate as suggested by the book
+        # it is usually inversely proportional to the square root of the problem size
+        learning_rate = 1/(individual_size**0.5)
+        self.toolbox.register(
+            "mutate_step_size",
+            self.uncorrelated_mutation_one_step_size,
+            mu=self.mutation_mu,
+            learning_rate=learning_rate,
+            epsilon=EPSILON_UNCORRELATED_MUTATION
         )
         self.toolbox.register(
             "select_parents", tools.selTournament, tournsize=TOURNSIZE
@@ -117,6 +136,7 @@ class DeapOptimizer:
 
         # Finally, we have to define the evaluation function. To do so, we gotta set up an evoman environment.
         self.toolbox.register("evaluate", self.game_runner.evaluate)
+
         if (not self.parallel) and os.path.isfile(self.checkpoint):
             # If the checkpoint file exists, load it.
             with open(self.checkpoint, "rb") as cp_file:
@@ -136,6 +156,15 @@ class DeapOptimizer:
                     self.initialize_population()
         else:
             self.initialize_population()
+
+    def uncorrelated_mutation_one_step_size(self, mutation_step_size, mu, learning_rate, epsilon):
+        """
+        Update of the mutation step size. It must be computed before of performing the mutation on the individual.
+        """
+        mutation_step_size *= np.exp(random.gauss(mu, learning_rate))
+
+        # if the new mutation_step_size is too small, return epsilon
+        return mutation_step_size if mutation_step_size > epsilon else epsilon
 
     def initialize_population(self):
         self.population = self.toolbox.population()
@@ -159,6 +188,7 @@ class DeapOptimizer:
 
         # First, evaluate the whole population's fitnesses.
         self.evaluate_fitness_for_individuals(self.population)
+
         # Add the stats that we'll track to the logbook.
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", np.mean)
@@ -170,7 +200,7 @@ class DeapOptimizer:
             range(generations), desc=f"Run with nodes: {self.layer_nodes}", leave=False
         ):
             if not self.parallel:
-                print(f"👨‍👩‍👧 Generation {g} is about to give birth to children! 👨‍👩‍👧")
+                print(f"\n👨‍👩‍👧 Generation {g} is about to give birth to children! 👨‍👩‍👧")
             # We save every SAVING_FREQUENCY generations.
             if g % SAVING_FREQUENCY == 0 and not self.parallel:
                 # Fill the dictionary using the dict(key=value[, ...]) constructor
@@ -182,6 +212,9 @@ class DeapOptimizer:
                 )
                 with open(self.checkpoint, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
+
+            print()
+            print(f"Mutation step sizes in generation {g}: {[ind.mutation_step for ind in self.population]}\n")
 
             # create a new offspring of size LAMBDA*len(population)
             # literature advise to use LAMBDA=3
@@ -204,15 +237,21 @@ class DeapOptimizer:
 
                 # apply mutation to the 2 new children
                 if random.random() < self.mut_probability:
-                    (offspring[i - 1],) = self.toolbox.mutate(offspring[i - 1])
+                    # mutate the step size
+                    offspring[i - 1].mutation_step = self.toolbox.mutate_step_size(offspring[i - 1].mutation_step)
+                    offspring[i].mutation_step = self.toolbox.mutate_step_size(offspring[i].mutation_step)
+
+                    # mutate the individuals
+                    (offspring[i - 1],) = self.toolbox.mutate(offspring[i - 1], sigma=offspring[i - 1].mutation_step)
                     del offspring[i - 1].fitness.values
 
-                    (offspring[i],) = self.toolbox.mutate(offspring[i])
+                    (offspring[i],) = self.toolbox.mutate(offspring[i],  sigma=offspring[i].mutation_step)
                     del offspring[i].fitness.values
 
             # Evaluate the individuals with an invalid fitness
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            # Then evaluate their fitnesses.
+
+            # Then evaluate the fitnesses of individuals with an invalid fitness
             self.evaluate_fitness_for_individuals(invalid_ind)
 
             # Select the survivors for next generation of individuals between the old and the new generation
@@ -228,6 +267,9 @@ class DeapOptimizer:
                 print(f"Right now, the average fitness is: {self.record['avg']}")
             # The population is entirely replaced by the offspring
             self.population = offspring
+
+
+
         # Return the best individual
         return self.record["max"], self.population[self.record["best_individual"]]
 
