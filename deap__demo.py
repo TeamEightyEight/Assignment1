@@ -27,7 +27,7 @@ env = Environment(
 
 
 # tests saved demo solutions for each enemy
-for en in range(4, 5):
+for en in range(2, 3):
 
     # Update the enemy
     env.update_parameter("enemies", [en])

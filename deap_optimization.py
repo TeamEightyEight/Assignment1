@@ -1,3 +1,5 @@
+import time
+
 from deap import base, creator, tools, algorithms
 import numpy as np
 import random
@@ -6,24 +8,30 @@ import pickle
 import os
 from tqdm import tqdm
 from simmys_multilayer_controller import PlayerController
+from scipy.spatial import distance_matrix
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 19, 28, 20, 5]
+LAYER_NODES = [20, 5, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
-CX_PROBABILITY = 0.79
+CX_PROBABILITY = 0.8
 CX_ALPHA = 0.5
-MUT_PROBABILITY = 0.54
+MUT_PROBABILITY = 0.3
 MUTATION_MU = 0
-MUTATION_STEP_SIZE = 3.0
+MUTATION_STEP_SIZE = 1.0
 MUTATION_INDPB = 0.76
 POPULATION_SIZE = 10
-GENERATIONS = 13
+GENERATIONS = 25
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
-LAMBDA = 7
+LAMBDA = 5
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
 EPSILON_UNCORRELATED_MUTATION = 1.e-6
+
+# [K. Deb. Multi-objective Optimization using Evolutionary Algorithms. Wiley, Chichester, UK, 2001]
+# suggests that a default value for the niche size should be in the range 5–10
+NICHE_SIZE = 5.0
+ALPHA_FITNESS_SHARING = 1.0
 
 class DeapOptimizer:
     def __init__(
@@ -37,9 +45,10 @@ class DeapOptimizer:
         mutation_mu=MUTATION_MU,
         mutation_step_size=MUTATION_STEP_SIZE,
         mutation_indpb=MUTATION_INDPB,
+        niche_size=NICHE_SIZE,
         checkpoint="checkpoint",
         parallel=False,
-        game_runner=GameRunner(PlayerController(LAYER_NODES), headless=False),
+        game_runner=GameRunner(PlayerController(LAYER_NODES)),
     ):
         """
         Initializes the Deap Optimizer.
@@ -52,6 +61,8 @@ class DeapOptimizer:
             :param mutation_step_size: The initial standard deviation of the normal distribution used for mutation. (float)
             :param mutation_indpb: The probability of an individual being mutated. (float, 0<=x<=1)
             :param population_size: The size of the population. (int)
+            :param niche_size: The size of the niche considered to keep diversity with the fitness sharing.
+                                If it is 0.0, the fitness sharing will be disabled. (float)
             :param checkpoint: The file name to save the checkpoint. (str)
             :param game_runner: The EVOMAN game runner. (GameRunner)
         """
@@ -65,6 +76,7 @@ class DeapOptimizer:
         self.lambda_offspring = lambda_offspring
         self.game_runner = game_runner
         self.parallel = parallel
+        self.niche_size = niche_size
         self.mutation_mu = mutation_mu
         self.mutation_step_size = mutation_step_size
         self.mutation_indpb = mutation_indpb
@@ -72,7 +84,7 @@ class DeapOptimizer:
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 
         # at each individual it is assigned an initial mutation step size
-        creator.create("Individual", np.ndarray, fitness=creator.FitnessMax, mutation_step = self.mutation_step_size)
+        creator.create("Individual", np.ndarray, fitness=creator.FitnessMax, mutation_step=self.mutation_step_size)
         self.register_toolbox()
 
     def register_toolbox(self):
@@ -82,7 +94,7 @@ class DeapOptimizer:
         self.toolbox = base.Toolbox()
 
         # Register the initialization function for an individual.
-        self.toolbox.register("attr_float", random.random)
+        self.toolbox.register("attr_float", lambda: random.uniform(MIN_VALUE_INDIVIDUAL, MAX_VALUE_INDIVIDUAL))
 
         """
         The following associates the individual alias to the initRepeat function, which creates WEIGHTS_NO 
@@ -138,6 +150,10 @@ class DeapOptimizer:
         # Finally, we have to define the evaluation function. To do so, we gotta set up an evoman environment.
         self.toolbox.register("evaluate", self.game_runner.evaluate)
 
+        # We have to define also an evaluation to compute the fitness sharing, if it is enabled
+        if self.niche_size > 0:
+            self.toolbox.register("evaluate_sharing", self.fitness_sharing, niche_size=self.niche_size, alpha=ALPHA_FITNESS_SHARING)
+
         if (not self.parallel) and os.path.isfile(self.checkpoint):
             # If the checkpoint file exists, load it.
             with open(self.checkpoint, "rb") as cp_file:
@@ -158,6 +174,33 @@ class DeapOptimizer:
         else:
             self.initialize_population()
 
+    def sharing(self, distance, niche_size, alpha):
+        """
+        Sharing function which count distant neighbourhoods less than close neighbourhoods
+            :param distance: Distance between two individuals (float)
+            :param niche_size: It is the share radius, the size of a niche in the genotype space; it decides both how many niches can be maintained and the granularity with which different niches can be discriminated (float)
+            :param alpha: Determines the shape of the sharing function; for α=1 the function is linear, but for values greater than this the effect of similar individuals in reducing a solution’s fitness falls off more rapidly with distance (float)
+        """
+        if distance < niche_size:
+            return 1 - (distance / niche_size) ** alpha
+        else:
+            return 0
+
+    def fitness_sharing(self, individual, population, niche_size, alpha):
+        """
+        Compute the fitness of an individual and adjust it according to the number of individuals falling within some prespecified distance.
+            :param individual: individual which you want compute to evaluate
+            :param population: array of individual inside the actual population
+            :param niche_size: It is the share radius, the size of a niche in the genotype space; it decides both how many niches can be maintained and the granularity with which different niches can be discriminated (float)
+            :param alpha: Determines the shape of the sharing function; for α=1 the function is linear, but for values greater than this the effect of similar individuals in reducing a solution’s fitness falls off more rapidly with distance (float)
+        """
+        # compute the fitness of the individual
+        fitness = self.game_runner.evaluate(individual)[0]
+
+        # compute array of distances between the individual and all other individual in the population
+        distances = distance_matrix([individual], population)[0]
+        return fitness / sum([self.sharing(d, niche_size, alpha) for d in distances]),
+
     def uncorrelated_mutation_one_step_size(self, mutation_step_size, mu, learning_rate, epsilon):
         """
         Update of the mutation step size. It must be computed before of performing the mutation on the individual.
@@ -172,23 +215,37 @@ class DeapOptimizer:
         self.start_gen = 0
         self.logbook = tools.Logbook()
 
-    def evaluate_fitness_for_individuals(self, individuals):
+
+    def evaluate_fitness_for_individuals(self, population, evaluate):
         """
         This loops over a given population of individuals,
         and saves the fitness to each Individual object (individual.fitness.values)
-        :param individuals: The population of individuals to evaluate. (list)
+        :param population: The population of individuals to evaluate. (list)
         """
-        fitnesses = map(self.toolbox.evaluate, individuals)
-        for ind, fit in zip(individuals, fitnesses):
+        fitnesses = map(evaluate, population)
+        for ind, fit in zip(population, fitnesses):
             ind.fitness.values = fit
 
     def evolve(self, generations):
+        """
+        This method is responsible of creating the population of individuals,
+        """
         """
         Runs the GA for a given number of generations.
         """
 
         # First, evaluate the whole population's fitnesses.
-        self.evaluate_fitness_for_individuals(self.population)
+        # This evaluation is done in different ways according to whether the fitness sharing is enabled or not.
+        if self.niche_size > 0:
+            self.evaluate_fitness_for_individuals(
+                self.population
+                , lambda individual: self.toolbox.evaluate_sharing(individual, population=self.population)
+            )
+        else:
+            self.evaluate_fitness_for_individuals(
+                self.population
+                , self.toolbox.evaluate
+            )
 
         # Add the stats that we'll track to the logbook.
         stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -214,13 +271,21 @@ class DeapOptimizer:
                 with open(self.checkpoint, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
 
-            print()
-            print(f"Mutation step sizes in generation {g}: {[ind.mutation_step for ind in self.population]}\n")
+            # if the fitness sharing is enabled, you have to compute it for the new population
+            if self.niche_size > 0:
+                self.evaluate_fitness_for_individuals(
+                    self.population
+                    , lambda individual: self.toolbox.evaluate_sharing(individual, population=self.population)
+                )
+
+            print(f"Fitnesses in generation {g} of element 0: {self.population[0].fitness}")
+            print(f"Mutation step sizes in generation {g}: {[ind.mutation_step for ind in self.population]}")
 
             # create a new offspring of size LAMBDA*len(population)
-            # literature advise to use LAMBDA=3
+            # literature advise to use LAMBDA=5-7
+            offspring_size = self.lambda_offspring * len(self.population)
             offspring = []
-            for i in range(1, self.lambda_offspring * len(self.population), 2):
+            for i in range(1, offspring_size, 2):
 
                 # selection of 2 parents with replacement
                 parents = self.toolbox.select_parents(self.population, k=2)
@@ -236,11 +301,12 @@ class DeapOptimizer:
                     )
                     del offspring[i - 1].fitness.values, offspring[i].fitness.values
 
+                # mutate the step size
+                offspring[i - 1].mutation_step = self.toolbox.mutate_step_size(offspring[i - 1].mutation_step)
+                offspring[i].mutation_step = self.toolbox.mutate_step_size(offspring[i].mutation_step)
+
                 # apply mutation to the 2 new children
                 if random.random() < self.mut_probability:
-                    # mutate the step size
-                    offspring[i - 1].mutation_step = self.toolbox.mutate_step_size(offspring[i - 1].mutation_step)
-                    offspring[i].mutation_step = self.toolbox.mutate_step_size(offspring[i].mutation_step)
 
                     # mutate the individuals
                     (offspring[i - 1],) = self.toolbox.mutate(offspring[i - 1], sigma=offspring[i - 1].mutation_step)
@@ -249,34 +315,45 @@ class DeapOptimizer:
                     (offspring[i],) = self.toolbox.mutate(offspring[i],  sigma=offspring[i].mutation_step)
                     del offspring[i].fitness.values
 
-            # Evaluate the individuals with an invalid fitness
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            start_time = time.time()
 
-            # Then evaluate the fitnesses of individuals with an invalid fitness
-            self.evaluate_fitness_for_individuals(invalid_ind)
+            if self.niche_size > 0:
+                # Evaluate the fitness for the whole offspring
+                self.evaluate_fitness_for_individuals(offspring, self.toolbox.evaluate)
+            else:
+                # If the fitness sharing is disabled, is not needed to recalculate the fitness each individual
 
-            # Select the survivors for next generation of individuals between the old and the new generation
-            # (fitness-based selection)
+                # Evaluate the individuals with an invalid fitness
+                invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+
+                # Then evaluate the fitness of individuals with an invalid fitness
+                self.evaluate_fitness_for_individuals(invalid_ind, self.toolbox.evaluate)
+
+            print(f"Time to evaluate the fitness in the offspring: {time.time() - start_time} seconds")
+
+            # Select the survivors for next generation of individuals only between the new generation
+            # (age-based selection)
             offspring = self.toolbox.select_survivors(
-                self.population + offspring, len(self.population)
+               offspring, len(self.population)
             )
 
-            # Compute the stats for the generation, and save them to the logbook.
-            self.record = stats.compile(self.population)
-            self.logbook.record(gen=g, evals=len(invalid_ind), **self.record)
-            if not self.parallel:
-                print(f"Right now, the average fitness is: {self.record['avg']}")
             # The population is entirely replaced by the offspring
             self.population = offspring
 
+            print(f"Fitnesses sharing in generation {g} of element 0: {self.population[0].fitness}")
 
+            # Compute the stats for the generation, and save them to the logbook.
+            self.record = stats.compile(self.population)
+            self.logbook.record(gen=g, evals=offspring_size, **self.record)
+            if not self.parallel:
+                print(f"Right now, the average fitness is: {self.record['avg']}\n")
 
         # Return the best individual
         return self.record["max"], self.population[self.record["best_individual"]]
 
 
 if __name__ == "__main__":
-    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3])
+    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3], headless=True)
     optimizer = DeapOptimizer(population_size=POPULATION_SIZE, game_runner=game_runner)
     max_fitness, best_individual = optimizer.evolve(generations=GENERATIONS)
     if not optimizer.parallel:
