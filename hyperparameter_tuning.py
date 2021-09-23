@@ -28,8 +28,9 @@ def test_hyperparameters_vector(args):
         cx_probability=args["cx_probability"],
         cx_alpha=args["cx_alpha"],
         mut_probability=args["mut_probability"],
-        mutation_sigma=args["mutation_sigma"],
+        mutation_step_size=args["mutation_step_size"],
         mutation_indpb=args["mutation_indpb"],
+        niche_size=args["niche_size"],
         parallel=True,
     )
     max_fitness, best_individual = optimizer.evolve(
@@ -49,8 +50,9 @@ space = hp.choice(
             "mut_probability": hp.uniform("mut_probability_1", 0, 1),
             "generations": hp.quniform("generations_1", 5, 25, 1),
             "layer_nodes": [hp.quniform("layer_1_1", 10, 30, 1)],
-            "mutation_sigma": hp.uniform("mutation_sigma_1", 0, 1),
+            "mutation_step_size": hp.uniform("mutation_step_size_1", 0, 1),
             "mutation_indpb": hp.uniform("mutation_indpb_1", 0, 1),
+            "niche_size": hp.uniform("niche_size_1", 5, 10),
         },
         {
             "name": "2-layered NN",
@@ -63,8 +65,9 @@ space = hp.choice(
                 hp.quniform("layer_1_2", 10, 30, 1),
                 hp.quniform("layer_2_2", 10, 30, 1),
             ],
-            "mutation_sigma": hp.uniform("mutation_sigma_2", 0, 1),
+            "mutation_step_size": hp.uniform("mutation_step_size_2", 0, 1),
             "mutation_indpb": hp.uniform("mutation_indpb_2", 0, 1),
+            "niche_size": hp.uniform("niche_size_2", 5, 10),
         },
         {
             "name": "3-layered NN",
@@ -78,8 +81,9 @@ space = hp.choice(
                 hp.quniform("layer_2_3", 10, 30, 1),
                 hp.quniform("layer_3_3", 10, 30, 1),
             ],
-            "mutation_sigma": hp.uniform("mutation_sigma_3", 0, 1),
+            "mutation_step_size": hp.uniform("mutation_step_size_3", 0, 1),
             "mutation_indpb": hp.uniform("mutation_indpb_3", 0, 1),
+            "niche_size": hp.uniform("niche_size_3", 5, 10),
         },
         {
             "name": "4-layered NN",
@@ -94,8 +98,9 @@ space = hp.choice(
                 hp.quniform("layer_3_4", 10, 30, 1),
                 hp.quniform("layer_4_4", 10, 30, 1),
             ],
-            "mutation_sigma": hp.uniform("mutation_sigma_4", 0, 1),
+            "mutation_step_size": hp.uniform("mutation_step_size_4", 0, 1),
             "mutation_indpb": hp.uniform("mutation_indpb_4", 0, 1),
+            "niche_size": hp.uniform("niche_size_4", 5, 10),
         },
     ],
 )
