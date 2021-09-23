@@ -10,7 +10,7 @@ from simmys_multilayer_controller import PlayerController
 from scipy.spatial import distance_matrix
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 15, 17, 10, 5]
+LAYER_NODES = [20, 15, 17, 20, 10, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
 CX_PROBABILITY = 0.8
 CX_ALPHA = 0.5
@@ -18,11 +18,11 @@ MUT_PROBABILITY = 0.3
 MUTATION_MU = 0
 MUTATION_STEP_SIZE = 1.0
 MUTATION_INDPB = 0.5
-POPULATION_SIZE = 20
-GENERATIONS = 20
+POPULATION_SIZE = 50
+GENERATIONS = 30
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
-LAMBDA = 5
+LAMBDA = 7                         # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
 EPSILON_UNCORRELATED_MUTATION = 1.e-6
@@ -280,10 +280,9 @@ class DeapOptimizer:
                 )
                 print(f"🚀 Fitness sharing of element 0 in generation {g} : {self.population[0].fitness}")
 
-            print(f"Mutation step sizes in generation {g}: {[ind.mutation_step for ind in self.population]}")
+            print(f"Mutation step sizes in generation {g}: {[round(ind.mutation_step,2) for ind in self.population]}")
 
             # create a new offspring of size LAMBDA*len(population)
-            # literature advise to use LAMBDA=5-7
             offspring_size = self.lambda_offspring * len(self.population)
             offspring = []
             for i in range(1, offspring_size, 2):
@@ -321,6 +320,7 @@ class DeapOptimizer:
             if self.niche_size > 0:
                 # Evaluate the fitness for the whole offspring
                 self.evaluate_fitness_for_individuals(offspring, self.toolbox.evaluate)
+                n_evals = len(offspring)
 
             else:
                 # If the fitness sharing is disabled, is not needed to recalculate the fitness each individual
@@ -330,8 +330,9 @@ class DeapOptimizer:
 
                 # Then evaluate the fitness of individuals with an invalid fitness
                 self.evaluate_fitness_for_individuals(invalid_ind, self.toolbox.evaluate)
+                n_evals = len(invalid_ind)
 
-            print(f"Time to evaluate the fitness in the offspring: {time.time() - start_time} seconds")
+            print(f"Time to evaluate the fitness in the offspring: {round(time.time() - start_time,1)} seconds")
 
             # Select the survivors for next generation of individuals only between the new generation
             # (age-based selection)
@@ -343,10 +344,11 @@ class DeapOptimizer:
             self.population = offspring
 
             print(f"🚀 Real fitness of element 0 in generation {g}: {self.population[0].fitness}")
+            print(f"👨‍💻 No. evaluations computed: {n_evals}")
 
             # Compute the stats for the generation, and save them to the logbook.
             self.record = stats.compile(self.population)
-            self.logbook.record(gen=g, evals=offspring_size, **self.record)
+            self.logbook.record(gen=g, evals=n_evals, **self.record)
             if not self.parallel:
                 print(f"Right now, respectively the average and the maximum fitness are: {self.record['avg']}, {self.record['max']}\n")
 
