@@ -357,7 +357,7 @@ class DeapOptimizer:
 
 
 if __name__ == "__main__":
-    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3], headless=True)
+    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3], headless=False)
     optimizer = DeapOptimizer(population_size=POPULATION_SIZE, game_runner=game_runner)
     max_fitness, best_individual = optimizer.evolve(generations=GENERATIONS)
     if not optimizer.parallel:
