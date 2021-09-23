@@ -22,7 +22,8 @@ class PlayerController(Controller):
         self.nodes_no = nodes_no
 
     # What is actually called controller in the demo are just weights
-    def control(self, inputs, weights_and_biases):
+    def control(self, inputs, individual):
+        weights_and_biases = individual["weights_and_biases"]
         # The biases are at the end of the array, the rest is weights
         biases = weights_and_biases[-(np.sum(self.nodes_no) - self.nodes_no[0]) :]
         weights = weights_and_biases[: -(np.sum(self.nodes_no) - self.nodes_no[0])]

@@ -1,27 +1,27 @@
 """
 Script to tune the hyperparameters.
 Uses HyperOpt, a library for hyperparameter tuning.
-The DeapOptimizer object will take care of the evolution and just return the best individual's fitness.
+The GeneticOptimizer object will take care of the evolution and just return the best individual's fitness.
 """
 import os
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 os.environ["SDL_VIDEODRIVER"] = "dummy"
-from deap_optimization import DeapOptimizer
+from genetic_optimization import GeneticOptimizer
 from game_runner import GameRunner
-from simmys_multilayer_controller import PlayerController
+from multilayer_controller import PlayerController
 from hyperopt import hp, fmin, tpe, space_eval
 from hyperopt import SparkTrials, STATUS_OK
 
 
 def test_hyperparameters_vector(args):
     """
-    Tests an hyperparameter vector with DeapOptimizer
+    Tests an hyperparameter vector with GeneticOptimizer
     """
     layer_nodes = [20] + [int(nodes) for nodes in list(args["layer_nodes"])] + [5]
     print(f"Now trying combination {args}")
     game_runner = GameRunner(PlayerController(layer_nodes), enemies=[3], headless=True)
-    optimizer = DeapOptimizer(
+    optimizer = GeneticOptimizer(
         layer_nodes=layer_nodes,
         population_size=int(args["population_size"]),
         game_runner=game_runner,

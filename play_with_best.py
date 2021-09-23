@@ -3,7 +3,7 @@ import sys, os
 
 sys.path.insert(0, "evoman")
 from environment import Environment
-from simmys_multilayer_controller import PlayerController
+from multilayer_controller import PlayerController
 
 # imports other libs
 import numpy as np
