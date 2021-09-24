@@ -10,7 +10,7 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 15, 17, 20, 10, 5]
+LAYER_NODES = [20, 20, 10, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
 CX_PROBABILITY = 0.8
 CX_ALPHA = 0.5
@@ -187,12 +187,6 @@ class GeneticOptimizer:
         if self.niche_size > 0:
             print(
                 f"Evolutionary process started using the 'Fitness sharing' method with niche_size={self.niche_size}"
-            )
-            self.toolbox.register(
-                "evaluate_sharing",
-                self.fitness_sharing,
-                niche_size=self.niche_size,
-                alpha=ALPHA_FITNESS_SHARING,
             )
 
         if (not self.parallel) and os.path.isfile(self.checkpoint):
@@ -379,9 +373,6 @@ class GeneticOptimizer:
                         niche_size=self.niche_size,
                         alpha=ALPHA_FITNESS_SHARING,
                     ),
-                )
-                print(
-                    f"🚀 Fitness sharing of element 0 in generation {g} : {self.population[0].fitness}"
                 )
 
             # create a new offspring of size LAMBDA*len(population)
