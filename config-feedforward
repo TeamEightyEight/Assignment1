@@ -3,7 +3,7 @@
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 100
-pop_size              = 100
+pop_size              = 20
 reset_on_extinction   = False
 
 [DefaultGenome]
@@ -85,7 +85,7 @@ species_elitism      = 0
 
 [DefaultReproduction]
 # The number of most-fit individuals in each species that will be preserved as-is from one generation to the next
-elitism            = 0
+elitism            = 1
 #The fraction for each species allowed to reproduce each generation.
 survival_threshold = 1 
 

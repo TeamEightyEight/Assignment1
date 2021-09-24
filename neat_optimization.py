@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, 'evoman')
 from environment import Environment
 from neat_controller import player_controller
+from custom_neat_classes import CoolPopulation88, CoolReporter88
 
 # imports other libs
 import time
@@ -13,30 +14,40 @@ import numpy as np
 from math import fabs,sqrt
 import glob, os
 
+
+
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
 
         net = neat.nn.FeedForwardNetwork.create(genome, config)
+        [genome.fitness,genome.player_energy,genome.enemy_energy] = simulation(env,net)
+        
+    return [genome.fitness,genome.player_energy]
 
-        output = simulation(env,net)
+def best_individual_run(genome,config):
+    net = neat.nn.FeedForwardNetwork.create(genome,config)
+    [genome.fitness,genome.player_energy,genome.enemy_energy] = simulation(env,net)
 
-        genome.fitness = output
-        print("genome.fitness={!r}".format(output))
-    return genome.fitness
-
+    return [genome.fitness,genome.player_energy,genome.enemy_energy]
+       
 # runs simulation
 def simulation(env,x):
     f,p,e,t = env.play(pcont=x)
-    return f
+    return f,p,e
 
-# evaluation
+# evaluation -> not being use
 def evaluate(x):
     return np.array(list(map(lambda y: simulation(env,y), x)))
 
-#######################################
+
 experiment_name = 'neat_demo'
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
+
+# choose this for not using visuals and thus making experiments faster
+headless = True
+if headless:
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 
 
@@ -46,11 +57,11 @@ env = Environment(experiment_name=experiment_name,
                   playermode="ai",
                   player_controller=player_controller(),
                   enemymode="static",
+                  randomini = 'yes',
                   level=2,
                   speed="fastest")
 
 # default environment fitness is assumed for experiment
-
 env.state_to_log() # checks environment state
 
 
@@ -63,26 +74,33 @@ ini = time.time()  # sets time marker
 
 run_mode = 'train' # train or test
 
-##################
-
-
-
 # Load configuration.
 config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                      neat.DefaultSpeciesSet, neat.DefaultStagnation,
                      'config-feedforward')
-print(config)
+
 # Create the population, which is the top-level object for a NEAT run.
-p = neat.Population(config)
+p = CoolPopulation88(config)
+
+
 # Add a stdout reporter to show progress in the terminal.
-p.add_reporter(neat.StdOutReporter(True))
+p.add_reporter(CoolReporter88(True))
 
 # Run until a solution is found.
-winner = p.run(eval_genomes)
+
+[best_ever,best_last_gen] = p.run(eval_genomes,13) #second parameter max num of generation
 
 # Display the winning genome.
+print("best_ever: {!s}".format(best_ever))
+#print("best_last: {!s}".format(best_last_gen))
+#print('\nBest genome:\n{!s}'.format([best_ever,best_last_gen]))
 
-print('\nBest genome:\n{!s}'.format(winner))
+
+#Now, for the best individual in the 13 generations, we run it 5 times and obtain his individual gain for each run
+print("\n#######################################\n")
+for i in range(0,5):
+    results = best_individual_run(best_ever,config)
+    print("Final Results: {!s}".format(results))
 
 
 
