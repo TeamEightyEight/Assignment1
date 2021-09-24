@@ -2,19 +2,19 @@
 
 [NEAT]
 fitness_criterion     = max
-fitness_threshold     = 3.9
-pop_size              = 10
+fitness_threshold     = 100
+pop_size              = 100
 reset_on_extinction   = False
 
 [DefaultGenome]
 # node activation options
 activation_default      = sigmoid
-activation_mutate_rate  = 0.0
+activation_mutate_rate  = 0.5
 activation_options      = sigmoid
 
 # node aggregation options
 aggregation_default     = sum
-aggregation_mutate_rate = 0.0
+aggregation_mutate_rate = 0.5
 aggregation_options     = sum
 
 # node bias options
@@ -27,8 +27,11 @@ bias_mutate_rate        = 0.7
 bias_replace_rate       = 0.1
 
 # genome compatibility options
+#The coefficient for the disjoint and excess gene counts’ contribution to the genomic distance.
 compatibility_disjoint_coefficient = 1.0
-compatibility_weight_coefficient   = 0.5
+#The coefficient for each weight, bias, or response multiplier difference’s contribution to the genomic distance
+#original 0.5
+compatibility_weight_coefficient   = 0.4 
 
 # connection add/remove rates
 conn_add_prob           = 0.5
@@ -39,15 +42,16 @@ enabled_default         = True
 enabled_mutate_rate     = 0.01
 
 feed_forward            = True
-#initial_connection      = full
-initial_connection = full_nodirect
+initial_connection      = full_direct
+
 
 # node add/remove rates
-node_add_prob           = 0.2
-node_delete_prob        = 0.2
+#original 0.2
+node_add_prob           = 0.3
+node_delete_prob        = 0.3
 
 # network parameters
-num_hidden              = 2
+num_hidden              = 10
 num_inputs              = 20
 num_outputs             = 5
 
@@ -66,18 +70,22 @@ weight_init_stdev       = 1.0
 weight_max_value        = 30
 weight_min_value        = -30
 weight_mutate_power     = 0.5
-weight_mutate_rate      = 0.8
+#original 0.8
+weight_mutate_rate      = 0.9
 weight_replace_rate     = 0.1
 
 [DefaultSpeciesSet]
+#Individuals whose genomic distance is less than this threshold are considered to be in the same species.
 compatibility_threshold = 3.0
 
 [DefaultStagnation]
-species_fitness_func = max
-max_stagnation       = 20
-species_elitism      = 2
+species_fitness_func = max 
+max_stagnation       = 5
+species_elitism      = 0
 
 [DefaultReproduction]
-elitism            = 2
-survival_threshold = 0.2
+# The number of most-fit individuals in each species that will be preserved as-is from one generation to the next
+elitism            = 0
+#The fraction for each species allowed to reproduce each generation.
+survival_threshold = 1 
 

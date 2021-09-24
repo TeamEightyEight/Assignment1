@@ -10,7 +10,7 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 5, 5]
+LAYER_NODES = [20, 15, 17, 20, 10, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
 CX_PROBABILITY = 0.8
 CX_ALPHA = 0.5
@@ -22,15 +22,15 @@ POPULATION_SIZE = 20
 GENERATIONS = 20
 SAVING_FREQUENCY = 5
 TOURNSIZE = 5
-LAMBDA = 5
+LAMBDA = 7  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
 EPSILON_UNCORRELATED_MUTATION = 1.0e-6
-
+ALPHA_FITNESS_SHARING = 1.0
 # [K. Deb. Multi-objective Optimization using Evolutionary Algorithms. Wiley, Chichester, UK, 2001]
 # suggests that a default value for the niche size should be in the range 5–10
+# set it to 0.0 to disable the fitness sharing algorithm
 NICHE_SIZE = 5.0
-ALPHA_FITNESS_SHARING = 1.0
 
 
 class GeneticOptimizer:
@@ -183,6 +183,17 @@ class GeneticOptimizer:
         """
         Tries to load the checkpoint if it exists, otherwise it creates the population.
         """
+        # We have to define also an evaluation to compute the fitness sharing, if it is enabled
+        if self.niche_size > 0:
+            print(
+                f"Evolutionary process started using the 'Fitness sharing' method with niche_size={self.niche_size}"
+            )
+            self.toolbox.register(
+                "evaluate_sharing",
+                self.fitness_sharing,
+                niche_size=self.niche_size,
+                alpha=ALPHA_FITNESS_SHARING,
+            )
 
         if (not self.parallel) and os.path.isfile(self.checkpoint):
             # If the checkpoint file exists, load it.
@@ -369,9 +380,11 @@ class GeneticOptimizer:
                         alpha=ALPHA_FITNESS_SHARING,
                     ),
                 )
+                print(
+                    f"🚀 Fitness sharing of element 0 in generation {g} : {self.population[0].fitness}"
+                )
 
             # create a new offspring of size LAMBDA*len(population)
-            # literature advise to use LAMBDA=5-7
             offspring_size = self.lambda_offspring * len(self.population)
             offspring = []
             for i in range(1, offspring_size, 2):
