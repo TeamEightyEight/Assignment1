@@ -8,7 +8,7 @@ from multilayer_controller import PlayerController
 # imports other libs
 import numpy as np
 
-experiment_name = "deap_demo"
+experiment_name = "logs/demo_run"
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
