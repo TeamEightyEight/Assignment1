@@ -395,25 +395,25 @@ class GeneticOptimizer:
                     offspring[i - 1]["fitness"] = None
                     offspring[i]["fitness"] = None
 
-                # mutate the step size
-                offspring[i - 1][
-                    "step_size"
-                ] = self.uncorrelated_mutation_one_step_size(
-                    offspring[i - 1]["step_size"],
-                    mu=self.mutation_mu,
-                    learning_rate=self.learning_rate,
-                    epsilon=EPSILON_UNCORRELATED_MUTATION,
-                )
-                offspring[i]["step_size"] = self.uncorrelated_mutation_one_step_size(
-                    offspring[i]["step_size"],
-                    mu=self.mutation_mu,
-                    learning_rate=self.learning_rate,
-                    epsilon=EPSILON_UNCORRELATED_MUTATION,
-                )
-
                 # apply mutation to the 2 new children
                 if random.random() < self.mut_probability:
-
+                    # mutate the step size
+                    offspring[i - 1][
+                        "step_size"
+                    ] = self.uncorrelated_mutation_one_step_size(
+                        offspring[i - 1]["step_size"],
+                        mu=self.mutation_mu,
+                        learning_rate=self.learning_rate,
+                        epsilon=EPSILON_UNCORRELATED_MUTATION,
+                    )
+                    offspring[i][
+                        "step_size"
+                    ] = self.uncorrelated_mutation_one_step_size(
+                        offspring[i]["step_size"],
+                        mu=self.mutation_mu,
+                        learning_rate=self.learning_rate,
+                        epsilon=EPSILON_UNCORRELATED_MUTATION,
+                    )
                     # mutate the individuals
                     offspring[i - 1] = self.mutate_individual(offspring[i - 1])
                     offspring[i - 1]["fitness"] = None
