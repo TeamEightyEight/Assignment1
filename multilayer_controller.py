@@ -42,5 +42,10 @@ class PlayerController(Controller):
             used_weights += self.nodes_no[layer] * self.nodes_no[layer + 1]
             used_biases += self.nodes_no[layer + 1]
         actions = [1 if score > 0.5 else 0 for score in input]
+        # Going left/right and jumping/releasing are exclusive!
+        if actions[0] or actions[1]:
+            (actions[0], actions[1]) = (1, 0) if input[0] > input[1] else (0, 1)
+        if actions[2] or actions[4]:
+            (actions[2], actions[4]) = (1, 0) if input[2] > input[4] else (0, 1)
         # [left, right, jump, shoot, release]
         return actions
