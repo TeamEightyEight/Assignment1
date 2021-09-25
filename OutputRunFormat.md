@@ -16,7 +16,7 @@ n_gen; 	max_fitness; mean_fitness; best_individual_gain; best_individual
 where:
 
 - `best_individual_gain` is the `max([ (player_energy - enemy_energy) for ind in population])`
--  `best_individual` is the array of the weights +biases for which the individual_gain is the maximum between the population
+-  `best_individual` is the array of the weights+biases for which the individual_gain is the maximum between the population
 
 At the end there should be 10 of these files.
 

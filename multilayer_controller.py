@@ -12,6 +12,10 @@ def sigmoid_activation(x):
         return 1 / (1 + np.exp(-x))
 
 
+def relu_activation(x):
+    return np.maximum(0, x)
+
+
 class PlayerController(Controller):
     def __init__(self, nodes_no):
         """
@@ -41,7 +45,14 @@ class PlayerController(Controller):
             layer_biases = biases[
                 used_biases : used_biases + self.nodes_no[layer + 1]
             ].reshape((1, self.nodes_no[layer + 1]))
-            input = sigmoid_activation(np.dot(input, layer_weights) + layer_biases)[0]
+
+            # apply sigmoid activation only for the last layer
+            if layer == len(self.nodes_no) - 2:
+                input = sigmoid_activation(np.dot(input, layer_weights) + layer_biases)[0]
+            else:
+                # otherwise use ReLU as activation function
+                input = relu_activation(np.dot(input, layer_weights) + layer_biases)[0]
+
             used_weights += self.nodes_no[layer] * self.nodes_no[layer + 1]
             used_biases += self.nodes_no[layer + 1]
         actions = [1 if score > 0.5 else 0 for score in input]

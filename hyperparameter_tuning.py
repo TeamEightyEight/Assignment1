@@ -23,20 +23,19 @@ def test_hyperparameters_vector(args):
     game_runner = GameRunner(PlayerController(layer_nodes), enemies=[3], headless=True)
     optimizer = GeneticOptimizer(
         layer_nodes=layer_nodes,
+        generations=int(args["generations"]),
         population_size=int(args["population_size"]),
         game_runner=game_runner,
         cx_probability=args["cx_probability"],
         cx_alpha=args["cx_alpha"],
         mut_probability=args["mut_probability"],
-        mutation_step_size=args["mutation_step_size"],
-        mutation_indpb=args["mutation_indpb"],
+        mut_step_size=args["mutation_step_size"],
+        mut_indpb=args["mutation_indpb"],
         niche_size=args["niche_size"],
         parallel=True,
     )
-    max_fitness, best_individual = optimizer.evolve(
-        generations=int(args["generations"])
-    )
-    return -max_fitness
+    best_individual = optimizer.evolve()
+    return -best_individual["fitness"]
 
 
 space = hp.choice(

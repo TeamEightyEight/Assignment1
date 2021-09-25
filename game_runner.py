@@ -65,17 +65,12 @@ class GameRunner:
             )
         self.env.state_to_log()
 
-    def simulation(self, individual):
+    def evaluate(self, individual):
         """
         Method to actually run a play simulation. Returns the fitness only.
         :param individual: one individual from the population
         """
 
         fitness, player_life, enemy_life, time = self.env.play(pcont=individual)
-        return fitness
+        return fitness, player_life, enemy_life, time
 
-    def evaluate(self, individual):
-        """
-        Basically, a wrapper for simulation(self, individual) to comply with DEAP's format.
-        """
-        return (self.simulation(individual),)

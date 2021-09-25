@@ -13,7 +13,7 @@ if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
 # Update the number of neurons for this specific example
-LAYER_NODES = [20, 15, 17, 10, 5]
+LAYER_NODES = [20, 20, 15, 10, 5]
 
 # initializes environment for single objective mode (specialist)  with static enemy and ai player
 env = Environment(
@@ -23,6 +23,7 @@ env = Environment(
     speed="normal",
     enemymode="static",
     level=2,
+    randomini="yes"
 )
 
 
@@ -33,6 +34,6 @@ for en in range(3, 4):
     env.update_parameter("enemies", [en])
 
     # Load specialist controller
-    sol = np.loadtxt("best_individual.txt")
+    sol = {"weights_and_biases": np.loadtxt("best_individual.txt")}
     print("\n LOADING SAVED SPECIALIST SOLUTION FOR ENEMY " + str(en) + " \n")
-    env.play(sol)
+    env.play(pcont=sol)
