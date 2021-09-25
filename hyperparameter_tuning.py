@@ -13,7 +13,6 @@ from multilayer_controller import PlayerController
 from hyperopt import hp, fmin, tpe, space_eval
 from hyperopt import SparkTrials, STATUS_OK
 
-
 def test_hyperparameters_vector(args):
     """
     Tests an hyperparameter vector with GeneticOptimizer
