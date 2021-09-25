@@ -12,6 +12,7 @@ import time
 import numpy as np
 from math import fabs,sqrt
 import glob, os
+import pickle
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -38,7 +39,9 @@ experiment_name = 'neat_demo'
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
-
+headless = True
+if headless:
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 # initializes simulation in individual evolution mode, for single static enemy.
 env = Environment(experiment_name=experiment_name,
@@ -81,6 +84,12 @@ p.add_reporter(neat.StdOutReporter(True))
 
 # Run until a solution is found.
 winner = p.run(eval_genomes)
+
+print(type(winner))
+
+# Keeping the best genome
+with open('neat_winner.txt', 'wb') as pickle_out:
+    pickle.dump(winner, pickle_out)
 
 
 
