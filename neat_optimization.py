@@ -12,6 +12,7 @@ import time
 import numpy as np
 from math import fabs,sqrt
 import glob, os
+import pickle
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -38,7 +39,9 @@ experiment_name = 'neat_demo'
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
-
+headless = True
+if headless:
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 # initializes simulation in individual evolution mode, for single static enemy.
 env = Environment(experiment_name=experiment_name,
@@ -68,10 +71,12 @@ run_mode = 'train' # train or test
 
 
 # Load configuration.
-config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                     neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                     'config-feedforward')
-print(config)
+config = neat.Config(neat.DefaultGenome,
+    neat.DefaultReproduction,
+    neat.DefaultSpeciesSet,
+    neat.DefaultStagnation,
+    'config-feedforward')
+
 # Create the population, which is the top-level object for a NEAT run.
 p = neat.Population(config)
 # Add a stdout reporter to show progress in the terminal.
@@ -80,10 +85,20 @@ p.add_reporter(neat.StdOutReporter(True))
 # Run until a solution is found.
 winner = p.run(eval_genomes)
 
-# Display the winning genome.
+print(type(winner))
 
-print('\nBest genome:\n{!s}'.format(winner))
+# Getting the winner list from the winners file
+# If the file is empty then we make a new list with the mosth recent winner
+with open('neat_winners.txt', 'rb') as pickle_in:
+    try:
+        winners = pickle.load(pickle_in)
+        winners.append(winner)
+    except Exception as e:
+        winners = [winner]
 
+# Dumping the updated winners list to the file
+with open('neat_winners.txt', 'wb') as pickle_out:
+    pickle.dump(winners, pickle_out)
 
 
 
