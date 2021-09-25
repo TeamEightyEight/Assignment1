@@ -87,9 +87,18 @@ winner = p.run(eval_genomes)
 
 print(type(winner))
 
-# Keeping the best genome
-with open('neat_winner.txt', 'wb') as pickle_out:
-    pickle.dump(winner, pickle_out)
+# Getting the winner list from the winners file
+# If the file is empty then we make a new list with the mosth recent winner
+with open('neat_winners.txt', 'rb') as pickle_in:
+    try:
+        winners = pickle.load(pickle_in)
+        winners.append(winner)
+    except Exception as e:
+        winners = [winner]
+
+# Dumping the updated winners list to the file
+with open('neat_winners.txt', 'wb') as pickle_out:
+    pickle.dump(winners, pickle_out)
 
 
 
