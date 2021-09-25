@@ -76,6 +76,6 @@ class GameRunner:
 
     def evaluate(self, individual):
         """
-        Basically, a wrapper for simulation(self, individual) to comply with DEAP's format.
+        Basically, a wrapper for simulation(self, individual) to comply with the optimizer's format.
         """
         return (self.simulation(individual),)

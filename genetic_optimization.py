@@ -51,7 +51,7 @@ class GeneticOptimizer:
         parallel=False,
     ):
         """
-        Initializes the Deap Optimizer.
+        Initializes the Genetic Optimizer.
             :param layer_nodes: The number of nodes in each layer. (list)
             :param generations: The number of generations to run the GA for. (int)
             :param cx_probability: The probability of crossover. (float, 0<=x<=1)
