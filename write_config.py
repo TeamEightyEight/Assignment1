@@ -1,9 +1,14 @@
-#--- parameters for the XOR-2 experiment ---#
+def set_config(pop_size = 100,
+    weight_coeff = 0.4,
+    conn_add = 0.05,
+    node_add = 0.03,
+    num_hidden = 10):
+    configs = f'''#--- parameters for the XOR-2 experiment ---#
 
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 100
-pop_size              = 8
+pop_size              = {pop_size}
 reset_on_extinction   = False
 
 [DefaultGenome]
@@ -28,14 +33,14 @@ bias_replace_rate       = 0.1
 
 # genome compatibility options
 #The coefficient for the disjoint and excess gene counts� contribution to the genomic distance.
-compatibility_disjoint_coefficient = 1
+compatibility_disjoint_coefficient = 1w
 #The coefficient for each weight, bias, or response multiplier difference�s contribution to the genomic distance
 #original 0.5
-compatibility_weight_coefficient   = 0.4
+compatibility_weight_coefficient   = {weight_coeff}
 
 # connection add/remove rates
-conn_add_prob           = 0.05
-conn_delete_prob        = 0.05
+conn_add_prob           = {conn_add}
+conn_delete_prob        = {conn_add}
 
 # connection enable options
 enabled_default         = True
@@ -47,11 +52,11 @@ initial_connection      = full_direct
 
 # node add/remove rates
 #original 0.2
-node_add_prob           = 0.03
-node_delete_prob        = 0.03
+node_add_prob           = {node_add}
+node_delete_prob        = {node_add}
 
 # network parameters
-num_hidden              = 10
+num_hidden              = {num_hidden}
 num_inputs              = 20
 num_outputs             = 5
 
@@ -87,4 +92,7 @@ species_elitism      = 0
 # The number of most-fit individuals in each species that will be preserved as-is from one generation to the next
 elitism            = 1
 #The fraction for each species allowed to reproduce each generation.
-survival_threshold = 1
+survival_threshold = 1'''
+
+    with open('config-feedforward', 'w') as configfile:
+        configfile.write(configs)

@@ -1,4 +1,14 @@
 from __future__ import print_function
+import os
+from neat_optimization import *
+from write_config import set_config
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+from hyperopt import hp, fmin, tpe
+from hyperopt import SparkTrials, STATUS_OK
+
+
 import neat
 
 # imports framework
@@ -15,33 +25,55 @@ from math import fabs,sqrt
 import glob, os
 import pickle
 
+ENEMY = 2
+GENERATIONS = 4
+LAMBDA = 7
+
+space = hp.choice(
+    'GA',
+    [
+        {
+            'weight_coeff' : hp.uniform('weight_coeff', 0, 1),
+            'conn_add' : hp.uniform('conn_add', 0, 1),
+            'node_add' : hp.uniform('node_add', 0, 1),
+            'num_hidden' : hp.quniform('num_hidden', 5, 30, 10)
+        }
+    ]
+)
 
 
-def eval_genomes(genomes, config):
-    for genome_id, genome in genomes:
+def test_hyperparameter_vector(args = None):
+    def eval_genomes(genomes, config):
+        for genome_id, genome in genomes:
 
-        net = neat.nn.FeedForwardNetwork.create(genome, config)
+            net = neat.nn.FeedForwardNetwork.create(genome, config)
+            [genome.fitness,genome.player_energy,genome.enemy_energy] = simulation(env,net)
+            
+        return [genome.fitness,genome.player_energy]
+
+    def best_individual_run(genome,config):
+        net = neat.nn.FeedForwardNetwork.create(genome,config)
         [genome.fitness,genome.player_energy,genome.enemy_energy] = simulation(env,net)
+
+        return [genome.fitness,genome.player_energy,genome.enemy_energy]
         
-    return [genome.fitness,genome.player_energy]
+    # runs simulation
+    def simulation(env,x):
+        f,p,e,t = env.play(pcont=x)
+        return f,p,e
 
-def best_individual_run(genome,config):
-    net = neat.nn.FeedForwardNetwork.create(genome,config)
-    [genome.fitness,genome.player_energy,genome.enemy_energy] = simulation(env,net)
+    # evaluation -> not being use
+    def evaluate(x):
+        return np.array(list(map(lambda y: simulation(env,y), x)))
+    
 
-    return [genome.fitness,genome.player_energy,genome.enemy_energy]
-       
-# runs simulation
-def simulation(env,x):
-    f,p,e,t = env.play(pcont=x)
-    return f,p,e
-
-# evaluation -> not being use
-def evaluate(x):
-    return np.array(list(map(lambda y: simulation(env,y), x)))
-
-
-if __name__ == "__main__":
+    # if args:
+    #     set_config(args['weight_coeff'],
+    #             args['conn_add'],
+    #             args['node_add'],
+    #             args['num_hidden'])
+    # else:
+    #     set_config()
 
     experiment_name = 'neat_demo'
     if not os.path.exists(experiment_name):
@@ -51,8 +83,6 @@ if __name__ == "__main__":
     headless = True
     if headless:
         os.environ["SDL_VIDEODRIVER"] = "dummy"
-
-
 
     # initializes simulation in individual evolution mode, for single static enemy.
     env = Environment(experiment_name=experiment_name,
@@ -93,11 +123,17 @@ if __name__ == "__main__":
 
     # Run until a solution is found.
 
-    [best_ever,best_last_gen] = p.run(eval_genomes,13) #second parameter max num of generation
+    [best_ever,best_last_gen] = p.run(eval_genomes,3) #second parameter max num of generation
+    return -(best_ever.fitness)
 
-    # Display the winning genome.
-    print("best_ever: {!s}".format(best_ever))
-    #print("best_last: {!s}".format(best_last_gen))
-    #print('\nBest genome:\n{!s}'.format([best_ever,best_last_gen]))
-
-
+spark_trials = SparkTrials()
+best = fmin(
+    test_hyperparameter_vector,
+    space,
+    trials=spark_trials,
+    algo=tpe.suggest,
+    max_evals=50,
+)
+print("The best combination of hyperparameters is:")
+print(best)
+    
