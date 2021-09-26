@@ -98,14 +98,18 @@ class CoolPopulation88(object):
             # Gather and report statistics.
             best = None
             for g in itervalues(self.population):
-                if best is None or g.fitness > best.fitness:
+                #if best is None or g.fitness > best.fitness:
+                if best is None or g.individual_gain > best.individual_gain or ((g.individual_gain == best.individual_gain) and (g.fitness > best.fitness)): #first criteria is individual gain, then fitness
                     best = g
+
             self.reporters.post_evaluate(self.config, self.population, self.species, best)
             self.reporters.plot_reporter(self.config, self.generation, self.population, best, self.species)    #need to be done before reproduction
 
             # Track the best genome ever seen.
-            if self.best_genome is None or best.fitness > self.best_genome.fitness:
+            #if self.best_genome is None or best.fitness > self.best_genome.fitness:
+            if self.best_genome is None or best.individual_gain > self.best_genome.individual_gain or ((best.individual_gain == self.best_genome.individual_gain) and (best.fitness > self.best_genome.fitness)):
                 self.best_genome = best
+                
 
             if not self.config.no_fitness_termination:
                 # End if the fitness threshold is reached.
@@ -143,8 +147,7 @@ class CoolPopulation88(object):
             self.reporters.found_solution(self.config, self.generation, self.best_genome)
 
         self.reporters.final_plot_report()
-        #return self.best_genome
-        return [self.best_genome,best]
+        return self.best_genome,best
 
 
 class ReporterSet(object):
@@ -201,6 +204,9 @@ class ReporterSet(object):
         for r in self.reporters:
             r.final_plot_report()
 
+    def best_change(self,old_best, new_best):
+        for r in self.reporters:
+            r.best_change(old_best, new_best)
 
 class BaseReporter(object):
     """Definition of the reporter interface expected by ReporterSet."""
@@ -231,7 +237,7 @@ class BaseReporter(object):
 
 class CoolReporter88(BaseReporter):
     """Uses `print` to output information about the run; an example reporter class."""
-    def __init__(self, show_species_detail):
+    def __init__(self, show_species_detail,run_number,enemy):
         self.show_species_detail = show_species_detail
         self.generation = None
         self.generation_start_time = None
@@ -243,6 +249,9 @@ class CoolReporter88(BaseReporter):
         self.max_fitnesses = []
         self.mean_fitnesses = []
         self.max_individual_gains = []
+
+        self.run_number = run_number
+        self.enemy      = enemy
 
     def start_generation(self, generation):
         self.generation = generation
@@ -310,36 +319,36 @@ class CoolReporter88(BaseReporter):
 
     def plot_reporter(self, config, generation, population, best_genome, species_set):
         fitnesses = [c.fitness for c in itervalues(population)]
-        best_individual_gain = best_genome.player_energy - best_genome.enemy_energy
+        ind_gains = [c.individual_gain for c in itervalues(population)]
         
         fit_mean = mean(fitnesses)
-        fit_std = stdev(fitnesses)
         
         print("  n_gen  max_fitness  mean_fitness  best_individual_gain")
         print("  =====  ===========  ============  ====================")
-        print("   {0}   {1:3.5f}      {2:3.5f}      {3:3.5f}  ".format(generation, best_genome.fitness,fit_mean,best_individual_gain))
+        print("   {0}   {1:3.5f}      {2:3.5f}      {3:3.5f}  ".format(generation,
+                                                                      best_genome.fitness,
+                                                                      fit_mean,
+                                                                      best_genome.individual_gain))
 
         self.generations.append(generation)
         self.max_fitnesses.append(best_genome.fitness)
         self.mean_fitnesses.append(fit_mean)
-        self.max_individual_gains.append(best_individual_gain)
+        self.max_individual_gains.append(best_genome.individual_gain)
 
         generation_values = {
             'generation'    : generation,
             'max_fitness'   : best_genome.fitness,
             'mean_fitness'  : fit_mean,
-            'max_ind_gain'  : best_individual_gain
+            'max_ind_gain'  : best_genome.individual_gain
         }
 
         self.final_report_list.append(generation_values)
 
     def final_plot_report(self):
-        
-        secondsSinceEpoch = time.time()
-        timeObj = time.localtime(secondsSinceEpoch)
-        csv_file_name = 'line_plot_values_%d%d%d_%d%d.csv' % (timeObj.tm_mday, timeObj.tm_mon, timeObj.tm_year, timeObj.tm_hour, timeObj.tm_min)
 
-        with open(csv_file_name, mode='w', newline='') as line_plot_file:
+        csv_file_name = 'run%d_enemy%d_ea2.txt' % (self.run_number,self.enemy)
+
+        with open('neat_results/'+csv_file_name, mode='w', newline='') as line_plot_file:
             line_plot_writer = csv.writer(line_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
             
             print("  n_gen  max_fitness  mean_fitness  best_individual_gain")
@@ -352,4 +361,3 @@ class CoolReporter88(BaseReporter):
         
                 line_plot_writer.writerow([gen_values['generation'],gen_values['max_fitness'],gen_values['mean_fitness'],gen_values['max_ind_gain']])
                 
-
