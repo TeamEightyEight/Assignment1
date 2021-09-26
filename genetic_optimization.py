@@ -10,7 +10,7 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 import pandas as pd
 
-N_RUN = 3
+N_RUN = 5
 ENEMY = 3
 RUNS_DIR = "ea1_runs"
 
@@ -47,6 +47,7 @@ class GeneticOptimizer:
         layer_nodes=LAYER_NODES,
         cx_probability=CX_PROBABILITY,
         cx_alpha=CX_ALPHA,
+        tournsize=TOURNSIZE,
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
         lambda_offspring=LAMBDA,
@@ -64,6 +65,7 @@ class GeneticOptimizer:
             :param cx_probability: The probability of crossover. (float, 0<=x<=1)
             :param cx_alpha: Parameter of the crossover. Extent of the interval in which the new values can be drawn
                 for each attribute on both side of the parents’ attributes. (float)
+            :param tournsize: The size for the tournment in  the selection. (int)
             :param mut_probability: The probability of mutation. (float, 0<=x<=1)ù
             :param lambda_offspring: The scaling factor of the offspring size based on the population size
             :param mut_mu: The mean of the normal distribution used for mutation. (float)
@@ -88,6 +90,7 @@ class GeneticOptimizer:
         self.parallel = parallel
         self.niche_size = niche_size
         self.mut_mu = mut_mu
+        self.tournsize = tournsize
         self.mut_step_size = mut_step_size
         self.mut_indpb = mut_indpb
         self.cx_alpha = cx_alpha
@@ -175,7 +178,7 @@ class GeneticOptimizer:
                 )
         return individual
 
-    def tournament_selection(self, population, k, tournsize=TOURNSIZE):
+    def tournament_selection(self, population, k, tournsize):
         """
         Selects the best individuals from a population.
             :param population: The population to select from. (list)
@@ -447,7 +450,7 @@ class GeneticOptimizer:
             for i in range(1, offspring_size, 2):
 
                 # selection of 2 parents with replacement
-                parents = self.tournament_selection(self.population, k=2)
+                parents = self.tournament_selection(self.population, k=2, tournsize=self.tournsize)
 
                 # clone the 2 parents in the new offspring
                 offspring.append(self.clone_individual(parents[0]))
@@ -532,13 +535,14 @@ if __name__ == "__main__":
     best_individual = optimizer.evolve()
     if not optimizer.parallel:
         print(
-            "Evolution is finished! I saved the best individual in best_individual.txt"
+            f"Evolution is finished! I saved the best individual in best_individual.txt "
+            f"(fitness={best_individual['fitness']}, gain={best_individual['individual_gain']})"
         )
         # save the best individual in the best_individual.txt file
-        best_individual_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "best_individual.txt")
+        best_individual_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "best_individual_run_" + str(N_RUN) + ".txt")
         np.savetxt(best_individual_path, best_individual["weights_and_biases"])
 
         # save the logbook in a csv file
         logbook = optimizer.getLogbook()
-        logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "run_" + str(N_RUN) + ".csv")
+        logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "logbook_run_" + str(N_RUN) + ".csv")
         pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=False)

@@ -42,7 +42,7 @@ def line_plot(statistics):
                     label='std avg fitness')
     ax.fill_between(x, max_fitness_lower_bound, max_fitness_upper_bound, facecolor='red', alpha=0.5,
                     label='std max fitness')
-    ax.legend(loc='upper left')
+    ax.legend(loc='best')
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel('generations')
     ax.set_ylabel('fitness')
@@ -51,5 +51,6 @@ def line_plot(statistics):
 
 dir_path = os.path.join(RUNS_DIR, "enemy_"+str(ENEMY))
 data = read_files(dir_path)
+print(data)
 stats = statistics_across_generations(data)
 line_plot(stats)
