@@ -16,7 +16,7 @@ from hyperopt import SparkTrials, STATUS_OK
 
 ENEMY = 2
 GENERATIONS = 25
-LAMBDA = 5
+LAMBDA = 7
 
 def test_hyperparameters_vector(args):
     """
@@ -103,7 +103,7 @@ best = fmin(
     space,
     trials=spark_trials,
     algo=tpe.suggest,
-    max_evals=1,
+    max_evals=50,
 )
 print("The best combination of hyperparameters is:")
 print(best)
