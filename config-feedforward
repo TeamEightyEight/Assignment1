@@ -27,9 +27,9 @@ bias_mutate_rate        = 0.7
 bias_replace_rate       = 0.1
 
 # genome compatibility options
-#The coefficient for the disjoint and excess gene counts’ contribution to the genomic distance.
+#The coefficient for the disjoint and excess gene countsï¿½ contribution to the genomic distance.
 compatibility_disjoint_coefficient = 1.0
-#The coefficient for each weight, bias, or response multiplier difference’s contribution to the genomic distance
+#The coefficient for each weight, bias, or response multiplier differenceï¿½s contribution to the genomic distance
 #original 0.5
 compatibility_weight_coefficient   = 0.4 
 
@@ -87,5 +87,4 @@ species_elitism      = 0
 # The number of most-fit individuals in each species that will be preserved as-is from one generation to the next
 elitism            = 1
 #The fraction for each species allowed to reproduce each generation.
-survival_threshold = 1 
-
+survival_threshold = 1

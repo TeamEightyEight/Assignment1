@@ -13,6 +13,7 @@ import time
 import numpy as np
 from math import fabs,sqrt
 import glob, os
+import pickle
 
 
 
@@ -75,9 +76,11 @@ ini = time.time()  # sets time marker
 run_mode = 'train' # train or test
 
 # Load configuration.
-config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                     neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                     'config-feedforward')
+config = neat.Config(neat.DefaultGenome,
+    neat.DefaultReproduction,
+    neat.DefaultSpeciesSet,
+    neat.DefaultStagnation,
+    'config-feedforward')
 
 # Create the population, which is the top-level object for a NEAT run.
 p = CoolPopulation88(config)
@@ -96,12 +99,23 @@ print("best_ever: {!s}".format(best_ever))
 #print('\nBest genome:\n{!s}'.format([best_ever,best_last_gen]))
 
 
+# Getting the winner list from the winners file
+# If the file is empty then we make a new list with the mosth recent winner
+with open('neat_winners.txt', 'rb') as pickle_in:
+    try:
+        winners = pickle.load(pickle_in)
+        winners.append(winner)
+    except Exception as e:
+        winners = [winner]
 #Now, for the best individual in the 13 generations, we run it 5 times and obtain his individual gain for each run
 print("\n#######################################\n")
 for i in range(0,5):
     results = best_individual_run(best_ever,config)
     print("Final Results: {!s}".format(results))
 
+# Dumping the updated winners list to the file
+with open('neat_winners.txt', 'wb') as pickle_out:
+    pickle.dump(winners, pickle_out)
 
 
 
