@@ -8,21 +8,27 @@ from tqdm import tqdm
 from multilayer_controller import PlayerController
 from scipy.spatial import distance_matrix
 from tabulate import tabulate
+import pandas as pd
+
+N_RUN = 5
+ENEMY = 3
+RUNS_DIR = "ea1_runs"
+
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 20, 10, 5]
+LAYER_NODES = [20, 30, 20, 15, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
 CX_PROBABILITY = 0.8
 CX_ALPHA = 0.5
-MUT_PROBABILITY = 0.3
-MUTATION_MU = 0
-MUTATION_STEP_SIZE = 1.0
-MUTATION_INDPB = 0.76
-POPULATION_SIZE = 20
-GENERATIONS = 20
-SAVING_FREQUENCY = 5
+MUT_PROBABILITY = 0.2
+MUT_MU = 0
+MUT_STEP_SIZE = 1.0
+MUT_INDPB = 0.76
+POPULATION_SIZE = 5
+GENERATIONS = 3
+SAVING_FREQUENCY = 3
 TOURNSIZE = 5
-LAMBDA = 7  # literature advise to use LAMBDA=5-7
+LAMBDA = 2  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
 EPSILON_UNCORRELATED_MUTATION = 1.0e-6
@@ -30,36 +36,41 @@ ALPHA_FITNESS_SHARING = 1.0
 # [K. Deb. Multi-objective Optimization using Evolutionary Algorithms. Wiley, Chichester, UK, 2001]
 # suggests that a default value for the niche size should be in the range 5–10
 # set it to 0.0 to disable the fitness sharing algorithm
-NICHE_SIZE = 5.0
+NICHE_SIZE = 10.0
 
 
 class GeneticOptimizer:
     def __init__(
         self,
         game_runner,
+        generations=GENERATIONS,
         layer_nodes=LAYER_NODES,
         cx_probability=CX_PROBABILITY,
         cx_alpha=CX_ALPHA,
+        tournsize=TOURNSIZE,
         mut_probability=MUT_PROBABILITY,
         population_size=POPULATION_SIZE,
         lambda_offspring=LAMBDA,
-        mutation_mu=MUTATION_MU,
-        mutation_step_size=MUTATION_STEP_SIZE,
-        mutation_indpb=MUTATION_INDPB,
+        mut_mu=MUT_MU,
+        mut_step_size=MUT_STEP_SIZE,
+        mut_indpb=MUT_INDPB,
         niche_size=NICHE_SIZE,
         checkpoint="checkpoint",
         parallel=False,
     ):
         """
-        Initializes the Deap Optimizer.
+        Initializes the Genetic Optimizer.
             :param layer_nodes: The number of nodes in each layer. (list)
             :param generations: The number of generations to run the GA for. (int)
             :param cx_probability: The probability of crossover. (float, 0<=x<=1)
+            :param cx_alpha: Parameter of the crossover. Extent of the interval in which the new values can be drawn
+                for each attribute on both side of the parents’ attributes. (float)
+            :param tournsize: The size for the tournment in  the selection. (int)
             :param mut_probability: The probability of mutation. (float, 0<=x<=1)ù
             :param lambda_offspring: The scaling factor of the offspring size based on the population size
-            :param mutation_mu: The mean of the normal distribution used for mutation. (float)
-            :param mutation_step_size: The initial standard deviation of the normal distribution used for mutation. (float)
-            :param mutation_indpb: The probability of an individual being mutated. (float, 0<=x<=1)
+            :param mut_mu: The mean of the normal distribution used for mutation. (float)
+            :param mut_step_size: The initial standard deviation of the normal distribution used for mutation. (float)
+            :param mut_indpb: The probability of an individual being mutated. (float, 0<=x<=1)
             :param population_size: The size of the population. (int)
             :param niche_size: The size of the niche considered to keep diversity with the fitness sharing.
                                 If it is 0.0, the fitness sharing will be disabled. (float)
@@ -68,6 +79,7 @@ class GeneticOptimizer:
         """
         self.layer_nodes = layer_nodes
         self.checkpoint = checkpoint
+        self.generations = generations
         # The biases have to be the same amount of the nodes
         self.bias_no = np.sum(self.layer_nodes) - self.layer_nodes[0]
         self.cx_probability = cx_probability
@@ -77,9 +89,10 @@ class GeneticOptimizer:
         self.game_runner = game_runner
         self.parallel = parallel
         self.niche_size = niche_size
-        self.mutation_mu = mutation_mu
-        self.mutation_step_size = mutation_step_size
-        self.mutation_indpb = mutation_indpb
+        self.mut_mu = mut_mu
+        self.tournsize = tournsize
+        self.mut_step_size = mut_step_size
+        self.mut_indpb = mut_indpb
         self.cx_alpha = cx_alpha
         self.logbook = {}
         weights_no = 0
@@ -90,6 +103,9 @@ class GeneticOptimizer:
         # it is usually inversely proportional to the square root of the problem size
         self.learning_rate = 1 / (self.individual_size ** 0.5)
         self.verify_checkpoint()
+
+    def getLogbook(self):
+        return self.logbook
 
     def create_population(self, n, wandb_size):
         """
@@ -106,8 +122,9 @@ class GeneticOptimizer:
                     high=MAX_VALUE_INDIVIDUAL,
                     size=wandb_size,
                 ),
-                "step_size": self.mutation_step_size,
+                "mut_step_size": self.mut_step_size,
                 "fitness": None,
+                "individual_gain": None,
             }
             population.append(individual)
         return population
@@ -117,6 +134,8 @@ class GeneticOptimizer:
         Mates two individuals, randomly choosing a crossover point and performing a blend crossover as seen in book at page 67.
             :param individual1: The first parent. (np.array)
             :param individual2: The second parent. (np.array)
+            :param alpha: Extent of the interval in which the new values can be drawn for each attribute on both side
+                of the parents’ attributes. (float)
         """
         # For each weight/bias in the array, we decide a random shift quantity
         assert len(individual1["weights_and_biases"]) == len(
@@ -135,13 +154,13 @@ class GeneticOptimizer:
             )
         # We can then mutate the sigmas too!
         crossover = (1 - 2 * alpha) * random.random() - alpha
-        individual1["step_size"] = (
-            crossover * individual1["step_size"]
-            + (1 - crossover) * individual2["step_size"]
+        individual1["mut_step_size"] = (
+            crossover * individual1["mut_step_size"]
+            + (1 - crossover) * individual2["mut_step_size"]
         )
-        individual2["step_size"] = (
-            crossover * individual2["step_size"]
-            + (1 - crossover) * individual1["step_size"]
+        individual2["mut_step_size"] = (
+            crossover * individual2["mut_step_size"]
+            + (1 - crossover) * individual1["mut_step_size"]
         )
         return individual1, individual2
 
@@ -153,21 +172,22 @@ class GeneticOptimizer:
         """
         # We mutate the weights and biases
         for i in range(len(individual["weights_and_biases"])):
-            if random.random() < self.mutation_indpb:
+            if random.random() < self.mut_indpb:
                 individual["weights_and_biases"][i] += (
-                    random.gauss(0, 1) * individual["step_size"]
+                    random.gauss(0, 1) * individual["mut_step_size"]
                 )
         return individual
 
-    def tournament_selection(self, population, k):
+    def tournament_selection(self, population, k, tournsize):
         """
         Selects the best individuals from a population.
             :param population: The population to select from. (list)
             :param k: The number of individuals to select. (int)
+            :param tournsize: The number of individuals participating in each tournament. (int)
         """
         chosen_ones = []
         for i in range(0, k):
-            tournament = random.choices(population, k=TOURNSIZE)
+            tournament = random.choices(population, k=tournsize)
             chosen_ones.append(max(tournament, key=lambda x: x["fitness"]))
         return chosen_ones
 
@@ -179,19 +199,27 @@ class GeneticOptimizer:
         """
         return sorted(population, key=lambda x: x["fitness"])[-k:]
 
+
     def verify_checkpoint(self):
         """
         Tries to load the checkpoint if it exists, otherwise it creates the population.
         """
+
+        # Create the run directory  if it does not exist
+        if not self.parallel:
+            os.makedirs(os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY)), exist_ok=True)
+
         # We have to define also an evaluation to compute the fitness sharing, if it is enabled
         if self.niche_size > 0:
-            print(
-                f"Evolutionary process started using the 'Fitness sharing' method with niche_size={self.niche_size}"
-            )
+            if not self.parallel:
+                print(
+                    f"Evolutionary process started using the 'Fitness sharing' method with niche_size={self.niche_size}"
+                )
 
-        if (not self.parallel) and os.path.isfile(self.checkpoint):
+        checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint)
+        if (not self.parallel) and os.path.isfile(checkpoint_path):
             # If the checkpoint file exists, load it.
-            with open(self.checkpoint, "rb") as cp_file:
+            with open(checkpoint_path, "rb") as cp_file:
                 cp = pickle.load(cp_file)
                 self.population = cp["population"]
                 if self.population_size == len(self.population):
@@ -213,8 +241,11 @@ class GeneticOptimizer:
         """
         Sharing function which count distant neighbourhoods less than close neighbourhoods
             :param distance: Distance between two individuals (float)
-            :param niche_size: It is the share radius, the size of a niche in the genotype space; it decides both how many niches can be maintained and the granularity with which different niches can be discriminated (float)
-            :param alpha: Determines the shape of the sharing function; for α=1 the function is linear, but for values greater than this the effect of similar individuals in reducing a solution’s fitness falls off more rapidly with distance (float)
+            :param niche_size: It is the share radius, the size of a niche in the genotype space; it decides both how
+                many niches can be maintained and the granularity with which different niches are discriminated (float)
+            :param alpha: Determines the shape of the sharing function; for α=1 the function is linear, but for values
+                greater than this the effect of similar individuals in reducing a solution’s fitness falls off more
+                rapidly with distance (float)
         """
         if distance < niche_size:
             return 1 - (distance / niche_size) ** alpha
@@ -223,32 +254,38 @@ class GeneticOptimizer:
 
     def fitness_sharing(self, individual, population, niche_size, alpha):
         """
-        Compute the fitness of an individual and adjust it according to the number of individuals falling within some prespecified distance.
-            :param individual: individual which you want compute to evaluate
+        Compute the fitness of an individual and adjust it according to the number of individuals falling within some
+        pre-specified distance.
+            :param individual: individual for which you want compute the fitness sharing.
+                It must have the individual["fitness"] != None. (dict)
             :param population: array of individual inside the actual population
-            :param niche_size: It is the share radius, the size of a niche in the genotype space; it decides both how many niches can be maintained and the granularity with which different niches can be discriminated (float)
-            :param alpha: Determines the shape of the sharing function; for α=1 the function is linear, but for values greater than this the effect of similar individuals in reducing a solution’s fitness falls off more rapidly with distance (float)
+            :param niche_size: It is the share radius, the size of a niche in the genotype space; it decides both how
+                many niches can be maintained and the granularity with which different niches are discriminated (float)
+            :param alpha: Determines the shape of the sharing function; for α=1 the function is linear, but for values
+                greater than this the effect of similar individuals in reducing a solution’s fitness falls off more
+                rapidly with distance (float)
         """
         # compute the fitness of the individual
-        fitness = self.game_runner.evaluate(individual)[0]
+        fitness = individual["fitness"]
 
         # compute array of distances between the individual and all other individual in the population
         distances = distance_matrix(
             [individual["weights_and_biases"]],
             [individual["weights_and_biases"] for individual in population],
         )[0]
-        return (fitness / sum([self.sharing(d, niche_size, alpha) for d in distances]),)
+
+        return fitness / sum([self.sharing(d, niche_size, alpha) for d in distances])
 
     def uncorrelated_mutation_one_step_size(
-        self, mutation_step_size, mu, learning_rate, epsilon
+        self, mut_step_size, mu, learning_rate, epsilon
     ):
         """
         Update of the mutation step size. It must be computed before of performing the mutation on the individual.
         """
-        mutation_step_size *= np.exp(random.gauss(mu, learning_rate))
+        mut_step_size *= np.exp(random.gauss(mu, learning_rate))
 
-        # if the new mutation_step_size is too small, return epsilon
-        return mutation_step_size if mutation_step_size > epsilon else epsilon
+        # if the new mut_step_size is too small, return epsilon
+        return mut_step_size if mut_step_size > epsilon else epsilon
 
     def initialize_population(self):
         self.population = self.create_population(
@@ -257,14 +294,33 @@ class GeneticOptimizer:
         self.start_gen = 0
         self.logbook = {}
 
-    def evaluate_fitness_for_individuals(self, population, evaluate):
+    def evaluate_fitness_for_individuals(self, population):
         """
         This loops over a given population of individuals,
         and saves the fitness to each Individual object (individual.fitness.values)
         :param population: The population of individuals to evaluate. (list)
         """
-        fitnesses = map(evaluate, population)
-        for ind, fit in zip(population, fitnesses):
+        fitnesses = map(self.game_runner.evaluate, population)
+        for ind, (fit, player_life, enemy_life, time) in zip(population, fitnesses):
+            ind["fitness"] = fit
+            ind["individual_gain"] = player_life - enemy_life
+
+    def compute_fitness_sharing_for_individuals(self, population):
+        """
+        This loops over a given population of individuals, and computes the fitness to each individual
+            :param population: The population of individuals to evaluate. It is required that for each individual the
+            fitness value should be already computed (list)
+        """
+        fitnesses_sharing = map(
+            lambda individual: self.fitness_sharing(
+                individual,
+                population=population,
+                niche_size=self.niche_size,
+                alpha=ALPHA_FITNESS_SHARING,
+            )
+            , population
+        )
+        for ind, fit in zip(population, fitnesses_sharing):
             ind["fitness"] = fit
 
     def clone_individual(self, individual):
@@ -274,8 +330,9 @@ class GeneticOptimizer:
 
         return {
             "weights_and_biases": individual["weights_and_biases"].copy(),
-            "step_size": individual["step_size"],
+            "mut_step_size": individual["mut_step_size"],
             "fitness": individual["fitness"],
+            "individual_gain" : individual["individual_gain"]
         }
 
     def evaluate_stats(self, population):
@@ -284,12 +341,14 @@ class GeneticOptimizer:
             :param population: The population of individuals to evaluate. (list)
         """
         return {
-            "avg": np.average([ind["fitness"] for ind in population]),
-            "min": np.min([ind["fitness"] for ind in population]),
-            "max": np.max([ind["fitness"] for ind in population]),
-            "std": np.std([ind["fitness"] for ind in population]),
+            "avg_fitness": np.average([ind["fitness"] for ind in population]),
+            "min_fitness": np.min([ind["fitness"] for ind in population]),
+            "max_fitness": np.max([ind["fitness"] for ind in population]),
+            "std_fitness": np.std([ind["fitness"] for ind in population]),
+            "avg_mut_step_size": np.average([ind["mut_step_size"] for ind in population]),
+            "std_mut_step_size": np.std([ind["mut_step_size"] for ind in population]),
             "best_individual": population[
-                np.argmax([ind["fitness"] for ind in population])
+                np.argmax([ind["individual_gain"] for ind in population])
             ],
         }
 
@@ -300,10 +359,14 @@ class GeneticOptimizer:
         data = [
             [
                 i,
-                generation["avg"],
-                generation["max"],
-                generation["std"],
-                generation["best_individual"]["step_size"],
+                generation["avg_fitness"],
+                generation["max_fitness"],
+                generation["std_fitness"],
+                generation["best_individual"]["fitness"],
+                generation["best_individual"]["individual_gain"],
+                generation["best_individual"]["mut_step_size"],
+                generation["avg_mut_step_size"],
+                generation["std_mut_step_size"],
             ]
             for i, generation in self.logbook.items()
         ]
@@ -312,40 +375,52 @@ class GeneticOptimizer:
                 data,
                 headers=[
                     "Generation",
-                    "Avg fitness",
-                    "Max fitness",
-                    "Fitness std_dev",
-                    "step_size for the best",
+                    "Fitness avg",
+                    "Fitness max",
+                    "Fitness std",
+                    "Fitness best",
+                    "Gain best",
+                    "mut_step_size best",
+                    "mut_step_size avg",
+                    "mut_step_size std",
                 ],
+                tablefmt='orgtbl'
             )
         )
 
-    def evolve(self, generations):
+    def find_best(self):
         """
-        This method is responsible of creating the population of individuals,
+        Find the individual with the best gain across all the generations. If there are more than one individuals with
+        the same gain, return the individual with the highest fitness.
         """
+        best_gain_along_generations = np.array([
+                self.logbook[i]["best_individual"]["individual_gain"] for i in range(self.generations)
+            ])
+
+        occurrences_max_best = np.where(best_gain_along_generations == best_gain_along_generations.max())[0]
+
+        return self.logbook[
+            occurrences_max_best[
+                np.argmax(
+                    [
+                        self.logbook[i]["best_individual"]["fitness"]
+                        for i in occurrences_max_best
+                    ]
+                )
+            ]
+        ]["best_individual"]
+
+    def evolve(self):
         """
         Runs the GA for a given number of generations.
         """
 
-        # First, evaluate the whole population's fitnesses.
-        # This evaluation is done in different ways according to whether the fitness sharing is enabled or not.
-        if self.niche_size > 0:
-            self.evaluate_fitness_for_individuals(
-                self.population,
-                lambda individual: self.fitness_sharing(
-                    individual,
-                    population=self.population,
-                    niche_size=self.niche_size,
-                    alpha=ALPHA_FITNESS_SHARING,
-                ),
-            )
-        else:
-            self.evaluate_fitness_for_individuals(
-                self.population, self.game_runner.evaluate
-            )
+        # First, evaluate the whole population's fitnesses
+        self.evaluate_fitness_for_individuals(self.population)
+
+        # start the evolution across the generations
         for g in tqdm(
-            range(generations), desc=f"Run with nodes: {self.layer_nodes}", leave=False
+            range(self.generations), desc=f"Run with nodes: {self.layer_nodes}", leave=False
         ):
             if not self.parallel:
                 print(
@@ -360,20 +435,14 @@ class GeneticOptimizer:
                     logbook=self.logbook,
                     rndstate=random.getstate(),
                 )
-                with open(self.checkpoint, "wb") as cp_file:
+
+                checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint)
+                with open(checkpoint_path, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
 
             # if the fitness sharing is enabled, you have to compute it for the new population
             if self.niche_size > 0:
-                self.evaluate_fitness_for_individuals(
-                    self.population,
-                    lambda individual: self.fitness_sharing(
-                        individual,
-                        population=self.population,
-                        niche_size=self.niche_size,
-                        alpha=ALPHA_FITNESS_SHARING,
-                    ),
-                )
+                self.compute_fitness_sharing_for_individuals(self.population)
 
             # create a new offspring of size LAMBDA*len(population)
             offspring_size = self.lambda_offspring * len(self.population)
@@ -381,7 +450,7 @@ class GeneticOptimizer:
             for i in range(1, offspring_size, 2):
 
                 # selection of 2 parents with replacement
-                parents = self.tournament_selection(self.population, k=2)
+                parents = self.tournament_selection(self.population, k=2, tournsize=self.tournsize)
 
                 # clone the 2 parents in the new offspring
                 offspring.append(self.clone_individual(parents[0]))
@@ -399,21 +468,22 @@ class GeneticOptimizer:
                 if random.random() < self.mut_probability:
                     # mutate the step size
                     offspring[i - 1][
-                        "step_size"
+                        "mut_step_size"
                     ] = self.uncorrelated_mutation_one_step_size(
-                        offspring[i - 1]["step_size"],
-                        mu=self.mutation_mu,
+                        offspring[i - 1]["mut_step_size"],
+                        mu=self.mut_mu,
                         learning_rate=self.learning_rate,
                         epsilon=EPSILON_UNCORRELATED_MUTATION,
                     )
                     offspring[i][
-                        "step_size"
+                        "mut_step_size"
                     ] = self.uncorrelated_mutation_one_step_size(
-                        offspring[i]["step_size"],
-                        mu=self.mutation_mu,
+                        offspring[i]["mut_step_size"],
+                        mu=self.mut_mu,
                         learning_rate=self.learning_rate,
                         epsilon=EPSILON_UNCORRELATED_MUTATION,
                     )
+
                     # mutate the individuals
                     offspring[i - 1] = self.mutate_individual(offspring[i - 1])
                     offspring[i - 1]["fitness"] = None
@@ -425,9 +495,7 @@ class GeneticOptimizer:
 
             if self.niche_size > 0:
                 # Evaluate the fitness for the whole offspring
-                self.evaluate_fitness_for_individuals(
-                    offspring, self.game_runner.evaluate
-                )
+                self.evaluate_fitness_for_individuals(offspring)
             else:
                 # If the fitness sharing is disabled, is not needed to recalculate the fitness each individual
 
@@ -435,13 +503,12 @@ class GeneticOptimizer:
                 invalid_ind = [ind for ind in offspring if ind["fitness"] is None]
 
                 # Then evaluate the fitness of individuals with an invalid fitness
-                self.evaluate_fitness_for_individuals(
-                    invalid_ind, self.game_runner.evaluate
-                )
+                self.evaluate_fitness_for_individuals(invalid_ind)
 
-            print(
-                f"Time to evaluate the fitness in the offspring: {round(time.time() - start_time, 3)} seconds"
-            )
+            if not self.parallel:
+                print(
+                    f"Time to evaluate the fitness in the offspring: {round(time.time() - start_time, 3)} seconds"
+                )
 
             # Select the survivors for next generation of individuals only between the new generation
             # (age-based selection)
@@ -456,18 +523,26 @@ class GeneticOptimizer:
             if not self.parallel:
                 self.print_stats()
 
-        # Return the best individual
-        return self.record["max"], self.record["best_individual"]
+        # Return the best individual across all generations
+        return self.find_best()
 
 
 if __name__ == "__main__":
-    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[3], headless=True)
+    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[ENEMY], headless=True)
     optimizer = GeneticOptimizer(
-        population_size=POPULATION_SIZE, game_runner=game_runner
+        population_size=POPULATION_SIZE, generations=GENERATIONS, game_runner=game_runner
     )
-    max_fitness, best_individual = optimizer.evolve(generations=GENERATIONS)
+    best_individual = optimizer.evolve()
     if not optimizer.parallel:
         print(
-            "Evolution is finished! I saved the best individual in best_individual.txt"
+            f"Evolution is finished! I saved the best individual in best_individual.txt "
+            f"(fitness={best_individual['fitness']}, gain={best_individual['individual_gain']})"
         )
-        np.savetxt("best_individual.txt", best_individual["weights_and_biases"])
+        # save the best individual in the best_individual.txt file
+        best_individual_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "best_individual_run_" + str(N_RUN) + ".txt")
+        np.savetxt(best_individual_path, best_individual["weights_and_biases"])
+
+        # save the logbook in a csv file
+        logbook = optimizer.getLogbook()
+        logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "logbook_run_" + str(N_RUN) + ".csv")
+        pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=False)
