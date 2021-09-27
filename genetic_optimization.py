@@ -10,25 +10,25 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 import pandas as pd
 
-N_RUN = 5
+N_RUN = 1
 ENEMY = 3
 RUNS_DIR = "ea1_runs"
 
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
-LAYER_NODES = [20, 30, 20, 15, 5]
+LAYER_NODES = [20, 20, 24, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
-CX_PROBABILITY = 0.8
-CX_ALPHA = 0.5
-MUT_PROBABILITY = 0.2
+CX_PROBABILITY = 0.65
+CX_ALPHA = 0.45
+MUT_PROBABILITY = 0.89
 MUT_MU = 0
 MUT_STEP_SIZE = 1.0
-MUT_INDPB = 0.76
-POPULATION_SIZE = 5
-GENERATIONS = 3
+MUT_INDPB = 0.70
+POPULATION_SIZE = 3
+GENERATIONS = 10
 SAVING_FREQUENCY = 3
-TOURNSIZE = 5
-LAMBDA = 2  # literature advise to use LAMBDA=5-7
+TOURNSIZE = 3
+LAMBDA = 3  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
 EPSILON_UNCORRELATED_MUTATION = 1.0e-6
@@ -36,7 +36,7 @@ ALPHA_FITNESS_SHARING = 1.0
 # [K. Deb. Multi-objective Optimization using Evolutionary Algorithms. Wiley, Chichester, UK, 2001]
 # suggests that a default value for the niche size should be in the range 5–10
 # set it to 0.0 to disable the fitness sharing algorithm
-NICHE_SIZE = 10.0
+NICHE_SIZE = 8.0
 
 
 class GeneticOptimizer:
@@ -205,9 +205,9 @@ class GeneticOptimizer:
         Tries to load the checkpoint if it exists, otherwise it creates the population.
         """
 
-        # Create the run directory  if it does not exist
+        # Create the checkpoint directory  if it does not exist
         if not self.parallel:
-            os.makedirs(os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY)), exist_ok=True)
+            os.makedirs(os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint), exist_ok=True)
 
         # We have to define also an evaluation to compute the fitness sharing, if it is enabled
         if self.niche_size > 0:
@@ -216,7 +216,7 @@ class GeneticOptimizer:
                     f"Evolutionary process started using the 'Fitness sharing' method with niche_size={self.niche_size}"
                 )
 
-        checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint)
+        checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint, self.checkpoint+"_run_"+str(N_RUN)+".dat")
         if (not self.parallel) and os.path.isfile(checkpoint_path):
             # If the checkpoint file exists, load it.
             with open(checkpoint_path, "rb") as cp_file:
@@ -347,9 +347,9 @@ class GeneticOptimizer:
             "std_fitness": np.std([ind["fitness"] for ind in population]),
             "avg_mut_step_size": np.average([ind["mut_step_size"] for ind in population]),
             "std_mut_step_size": np.std([ind["mut_step_size"] for ind in population]),
-            "best_individual": population[
+            "best_individual": self.clone_individual(population[
                 np.argmax([ind["individual_gain"] for ind in population])
-            ],
+            ]),
         }
 
     def print_stats(self):
@@ -436,7 +436,7 @@ class GeneticOptimizer:
                     rndstate=random.getstate(),
                 )
 
-                checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint)
+                checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint, self.checkpoint+"_run_"+str(N_RUN)+".dat")
                 with open(checkpoint_path, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
 
@@ -534,15 +534,16 @@ if __name__ == "__main__":
     )
     best_individual = optimizer.evolve()
     if not optimizer.parallel:
-        print(
-            f"Evolution is finished! I saved the best individual in best_individual.txt "
-            f"(fitness={best_individual['fitness']}, gain={best_individual['individual_gain']})"
-        )
+
         # save the best individual in the best_individual.txt file
         best_individual_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "best_individual_run_" + str(N_RUN) + ".txt")
         np.savetxt(best_individual_path, best_individual["weights_and_biases"])
+        print(
+            f"Evolution is finished! I saved the best individual in {best_individual_path} "
+            f"(fitness={best_individual['fitness']}, gain={best_individual['individual_gain']})"
+        )
 
         # save the logbook in a csv file
         logbook = optimizer.getLogbook()
         logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "logbook_run_" + str(N_RUN) + ".csv")
-        pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=False)
+        pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=True, index_label="n_gen", sep=";")

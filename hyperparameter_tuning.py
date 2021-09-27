@@ -103,7 +103,7 @@ best = fmin(
     space,
     trials=spark_trials,
     algo=tpe.suggest,
-    max_evals=50,
+    max_evals=60,
 )
 print("The best combination of hyperparameters is:")
 print(best)

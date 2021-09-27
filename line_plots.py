@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 import glob
 import pandas as pd
@@ -7,12 +6,14 @@ from matplotlib.ticker import MaxNLocator
 
 ENEMY = 3
 RUNS_DIR = "ea1_runs"
+LOGBOOK_PATTERN = "logbook_run_"
+
 
 def read_files(dir_path):
     """
     Read all the files in the folder and return a list of dataframes.
     """
-    return [pd.read_csv(file) for file in glob.glob(os.path.join(dir_path, "*.csv"))]
+    return [pd.read_csv(file, sep=";") for file in glob.glob(os.path.join(dir_path, LOGBOOK_PATTERN+"*.csv"))]
 
 
 def statistics_across_generations(data):
@@ -27,6 +28,9 @@ def statistics_across_generations(data):
 
 
 def line_plot(statistics):
+    """
+    Plot the lines of mean_avg_fitness and mean_max_fitness and their standard deviation across the generations.
+    """
     x = statistics.index
 
     avg_fitness_lower_bound = statistics['mean_avg_fitness'] - statistics['std_avg_fitness']
@@ -42,6 +46,10 @@ def line_plot(statistics):
                     label='std avg fitness')
     ax.fill_between(x, max_fitness_lower_bound, max_fitness_upper_bound, facecolor='red', alpha=0.5,
                     label='std max fitness')
+    #ax.errorbar(x, statistics['mean_avg_fitness'], yerr=statistics['std_avg_fitness'], marker='o', linestyle='dashed', lw=2, label='mean avg fitness', color='blue')
+    #ax.errorbar(x, statistics['mean_max_fitness'], yerr=statistics['std_max_fitness'], marker='o', linestyle='dashed', lw=2, label='mean max fitness', color='red')
+
+
     ax.legend(loc='best')
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel('generations')
@@ -49,8 +57,9 @@ def line_plot(statistics):
     ax.grid()
     plt.show()
 
-dir_path = os.path.join(RUNS_DIR, "enemy_"+str(ENEMY))
-data = read_files(dir_path)
-print(data)
-stats = statistics_across_generations(data)
-line_plot(stats)
+
+if __name__ == "__main__":
+    dir_path = os.path.join(RUNS_DIR, "enemy_"+str(ENEMY))
+    data = read_files(dir_path)
+    stats = statistics_across_generations(data)
+    line_plot(stats)

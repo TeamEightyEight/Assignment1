@@ -71,7 +71,7 @@ class GameRunner:
         :param individual: one individual from the population
         """
 
-        fitness, player_life, enemy_life, time = self.env.play(pcont=individual)
+        fitness, player_life, enemy_life, time = self.env.play(pcont=individual["weights_and_biases"])
         return fitness, player_life, enemy_life, time
 
 
