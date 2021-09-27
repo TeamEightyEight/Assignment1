@@ -17,7 +17,7 @@ import pickle
 import csv
 
 
-ENEMY = 2
+ENEMY = 8
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 
-    for run_number in range(1,3):
+    for run_number in range(1,11):
         env = Environment(experiment_name=experiment_name,
                           enemies=[ENEMY],
                           playermode="ai",
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         p.add_reporter(CoolReporter88(True,run_number,ENEMY))
 
         # Run until a solution is found or max generation reached
-        best_ever,best_last_gen = p.run(eval_genomes,5)
+        best_ever,best_last_gen = p.run(eval_genomes,13)
 
         # Display the winning genome.
         print("\nbest_ever: {!s}".format(best_ever.fitness))
