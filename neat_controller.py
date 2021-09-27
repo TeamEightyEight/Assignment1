@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, 'evoman')
 from controller import Controller
 import numpy as np
 

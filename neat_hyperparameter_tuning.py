@@ -1,4 +1,7 @@
+# imports framework
 from __future__ import print_function
+import sys
+sys.path.insert(0, 'evoman')    
 import os
 from neat_optimization import *
 from write_config import set_config
