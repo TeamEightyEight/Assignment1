@@ -348,7 +348,7 @@ class CoolReporter88(BaseReporter):
 
         csv_file_name = 'run%d_enemy%d_ea2.txt' % (self.run_number,self.enemy)
 
-        with open('neat_results/'+csv_file_name, mode='w', newline='') as line_plot_file:
+        with open('neat_results2/'+csv_file_name, mode='w', newline='') as line_plot_file:
             line_plot_writer = csv.writer(line_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
             
             print("  n_gen  max_fitness  mean_fitness  best_individual_gain")

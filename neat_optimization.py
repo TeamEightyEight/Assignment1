@@ -17,7 +17,8 @@ import pickle
 import csv
 
 
-ENEMY = 8
+ENEMIES = [2]
+GENERATIONS = 13
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -47,74 +48,75 @@ def evaluate(x):
     return np.array(list(map(lambda y: simulation(env,y), x)))
 
 if __name__ == "__main__":
-    experiment_name = 'neat_results'
-    if not os.path.exists(experiment_name):
-        os.makedirs(experiment_name)
+    for ENEMY in ENEMIES:
+        experiment_name = 'neat_results2'
+        if not os.path.exists(experiment_name):
+            os.makedirs(experiment_name)
 
-    # choose this for not using visuals and thus making experiments faster
-    headless = True
-    if headless:
-        os.environ["SDL_VIDEODRIVER"] = "dummy"
+        # choose this for not using visuals and thus making experiments faster
+        headless = True
+        if headless:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 
-    for run_number in range(1,11):
-        env = Environment(experiment_name=experiment_name,
-                          enemies=[ENEMY],
-                          playermode="ai",
-                          player_controller=player_controller(),
-                          enemymode="static",
-                          randomini = 'yes',
-                          level=2,
-                          speed="fastest")
+        for run_number in range(1,11):
+            env = Environment(experiment_name=experiment_name,
+                              enemies=[ENEMY],
+                              playermode="ai",
+                              player_controller=player_controller(),
+                              enemymode="static",
+                              randomini = 'yes',
+                              level=2,
+                              speed="fastest")
 
-        env.state_to_log()
-        ini = time.time()  # sets time marker
-        run_mode = 'train' # train or test
+            env.state_to_log()
+            ini = time.time()  # sets time marker
+            run_mode = 'train' # train or test
 
-        # Load configuration.
-        config = neat.Config(neat.DefaultGenome,
-            neat.DefaultReproduction,
-            neat.DefaultSpeciesSet,
-            neat.DefaultStagnation,
-            'config-feedforward')
+            # Load configuration.
+            config = neat.Config(neat.DefaultGenome,
+                neat.DefaultReproduction,
+                neat.DefaultSpeciesSet,
+                neat.DefaultStagnation,
+                'config-feedforward2')
 
-        # Create the population, which is the top-level object for a NEAT run.
-        p = CoolPopulation88(config)
+            # Create the population, which is the top-level object for a NEAT run.
+            p = CoolPopulation88(config)
 
-        # Add a stdout reporter to show progress in the terminal.
-        p.add_reporter(CoolReporter88(True,run_number,ENEMY))
+            # Add a stdout reporter to show progress in the terminal.
+            p.add_reporter(CoolReporter88(True,run_number,ENEMY))
 
-        # Run until a solution is found or max generation reached
-        best_ever,best_last_gen = p.run(eval_genomes,13)
+            # Run until a solution is found or max generation reached
+            best_ever,best_last_gen = p.run(eval_genomes,GENERATIONS)
 
-        # Display the winning genome.
-        print("\nbest_ever: {!s}".format(best_ever.fitness))
+            # Display the winning genome.
+            print("\nbest_ever: {!s}".format(best_ever.fitness))
 
-        # Dumping the updated winners list to the file
-        pickle_file_name = 'run%d_enemy%d_ea2_pickleBest'% (run_number,ENEMY)
-        with open('neat_results/'+pickle_file_name, 'wb') as pickle_out:
-            #pickle.dump(winners, pickle_out)
-            pickle.dump(best_ever, pickle_out)
+            # Dumping the updated winners list to the file
+            pickle_file_name = 'run%d_enemy%d_ea2_pickleBest'% (run_number,ENEMY)
+            with open('neat_results2/'+pickle_file_name, 'wb') as pickle_out:
+                #pickle.dump(winners, pickle_out)
+                pickle.dump(best_ever, pickle_out)
 
-        with open('neat_results/'+pickle_file_name, mode='rb') as pickle_in:
-            best_pickle = pickle.load(pickle_in)
+            with open('neat_results2/'+pickle_file_name, mode='rb') as pickle_in:
+                best_pickle = pickle.load(pickle_in)
     
 
-        #Now, for the best individual in the all generations, we run it 5 times and obtain his individual gain for each run
-        print("\n#######################################\n")
-        box_plot_file_name = 'enemy%d_ea2.txt' % (ENEMY)
+            #Now, for the best individual in the all generations, we run it 5 times and obtain his individual gain for each run
+            print("\n#######################################\n")
+            box_plot_file_name = 'enemy%d_ea2.txt' % (ENEMY)
 
-        with open('neat_results/'+box_plot_file_name, mode='a', newline='') as box_plot_file:
-            box_plot_writer = csv.writer(box_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
+            with open('neat_results2/'+box_plot_file_name, mode='a', newline='') as box_plot_file:
+                box_plot_writer = csv.writer(box_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
             
-            individual_gains = []
+                individual_gains = []
 
-            for i in range(0,5):
-                individual_gain = best_individual_run(best_pickle,config)
-                individual_gains.append(individual_gain)
+                for i in range(0,5):
+                    individual_gain = best_individual_run(best_pickle,config)
+                    individual_gains.append(individual_gain)
 
-            print(individual_gains)
-            box_plot_writer.writerow(individual_gains)
+                print(individual_gains)
+                box_plot_writer.writerow(individual_gains)
 
 
 
