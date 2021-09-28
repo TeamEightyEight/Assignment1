@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 
 sys.path.insert(0, "evoman")
+from environment import Environment
 import os
 from neat_optimization import *
 from write_config import set_config
@@ -14,7 +15,6 @@ from hyperopt import SparkTrials, STATUS_OK
 
 
 import neat
-from environment import Environment
 from neat_controller import player_controller
 from custom_neat_classes import CoolPopulation88, CoolReporter88
 
