@@ -55,6 +55,7 @@ class GeneticOptimizer:
         mut_step_size=MUT_STEP_SIZE,
         mut_indpb=MUT_INDPB,
         niche_size=NICHE_SIZE,
+        run_number=N_RUN,
         checkpoint="checkpoint",
         parallel=False,
     ):
@@ -95,6 +96,7 @@ class GeneticOptimizer:
         self.mut_indpb = mut_indpb
         self.cx_alpha = cx_alpha
         self.logbook = {}
+        self.run_number = run_number
         weights_no = 0
         for i in range(0, len(self.layer_nodes) - 1):
             weights_no += self.layer_nodes[i] * self.layer_nodes[i + 1]
@@ -199,7 +201,6 @@ class GeneticOptimizer:
         """
         return sorted(population, key=lambda x: x["fitness"])[-k:]
 
-
     def verify_checkpoint(self):
         """
         Tries to load the checkpoint if it exists, otherwise it creates the population.
@@ -207,7 +208,10 @@ class GeneticOptimizer:
 
         # Create the checkpoint directory  if it does not exist
         if not self.parallel:
-            os.makedirs(os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint), exist_ok=True)
+            os.makedirs(
+                os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), self.checkpoint),
+                exist_ok=True,
+            )
 
         # We have to define also an evaluation to compute the fitness sharing, if it is enabled
         if self.niche_size > 0:
@@ -216,7 +220,12 @@ class GeneticOptimizer:
                     f"Evolutionary process started using the 'Fitness sharing' method with niche_size={self.niche_size}"
                 )
 
-        checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint, self.checkpoint+"_run_"+str(N_RUN)+".dat")
+        checkpoint_path = os.path.join(
+            RUNS_DIR,
+            "enemy_" + str(ENEMY),
+            self.checkpoint,
+            self.checkpoint + "_run_" + str(self.run_number) + ".dat",
+        )
         if (not self.parallel) and os.path.isfile(checkpoint_path):
             # If the checkpoint file exists, load it.
             with open(checkpoint_path, "rb") as cp_file:
@@ -317,8 +326,8 @@ class GeneticOptimizer:
                 population=population,
                 niche_size=self.niche_size,
                 alpha=ALPHA_FITNESS_SHARING,
-            )
-            , population
+            ),
+            population,
         )
         for ind, fit in zip(population, fitnesses_sharing):
             ind["fitness"] = fit
@@ -332,7 +341,7 @@ class GeneticOptimizer:
             "weights_and_biases": individual["weights_and_biases"].copy(),
             "mut_step_size": individual["mut_step_size"],
             "fitness": individual["fitness"],
-            "individual_gain" : individual["individual_gain"]
+            "individual_gain": individual["individual_gain"],
         }
 
     def evaluate_stats(self, population):
@@ -345,11 +354,13 @@ class GeneticOptimizer:
             "min_fitness": np.min([ind["fitness"] for ind in population]),
             "max_fitness": np.max([ind["fitness"] for ind in population]),
             "std_fitness": np.std([ind["fitness"] for ind in population]),
-            "avg_mut_step_size": np.average([ind["mut_step_size"] for ind in population]),
+            "avg_mut_step_size": np.average(
+                [ind["mut_step_size"] for ind in population]
+            ),
             "std_mut_step_size": np.std([ind["mut_step_size"] for ind in population]),
-            "best_individual": self.clone_individual(population[
-                np.argmax([ind["individual_gain"] for ind in population])
-            ]),
+            "best_individual": self.clone_individual(
+                population[np.argmax([ind["individual_gain"] for ind in population])]
+            ),
         }
 
     def print_stats(self):
@@ -384,7 +395,7 @@ class GeneticOptimizer:
                     "mut_step_size avg",
                     "mut_step_size std",
                 ],
-                tablefmt='orgtbl'
+                tablefmt="orgtbl",
             )
         )
 
@@ -393,11 +404,16 @@ class GeneticOptimizer:
         Find the individual with the best gain across all the generations. If there are more than one individuals with
         the same gain, return the individual with the highest fitness.
         """
-        best_gain_along_generations = np.array([
-                self.logbook[i]["best_individual"]["individual_gain"] for i in range(self.generations)
-            ])
+        best_gain_along_generations = np.array(
+            [
+                self.logbook[i]["best_individual"]["individual_gain"]
+                for i in range(self.generations)
+            ]
+        )
 
-        occurrences_max_best = np.where(best_gain_along_generations == best_gain_along_generations.max())[0]
+        occurrences_max_best = np.where(
+            best_gain_along_generations == best_gain_along_generations.max()
+        )[0]
 
         return self.logbook[
             occurrences_max_best[
@@ -420,7 +436,9 @@ class GeneticOptimizer:
 
         # start the evolution across the generations
         for g in tqdm(
-            range(self.generations), desc=f"Run with nodes: {self.layer_nodes}", leave=False
+            range(self.generations),
+            desc=f"Run with nodes: {self.layer_nodes}",
+            leave=False,
         ):
             if not self.parallel:
                 print(
@@ -436,7 +454,12 @@ class GeneticOptimizer:
                     rndstate=random.getstate(),
                 )
 
-                checkpoint_path = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), self.checkpoint, self.checkpoint+"_run_"+str(N_RUN)+".dat")
+                checkpoint_path = os.path.join(
+                    RUNS_DIR,
+                    "enemy_" + str(ENEMY),
+                    self.checkpoint,
+                    self.checkpoint + "_run_" + str(self.run_number) + ".dat",
+                )
                 with open(checkpoint_path, "wb") as cp_file:
                     pickle.dump(cp, cp_file)
 
@@ -450,7 +473,9 @@ class GeneticOptimizer:
             for i in range(1, offspring_size, 2):
 
                 # selection of 2 parents with replacement
-                parents = self.tournament_selection(self.population, k=2, tournsize=self.tournsize)
+                parents = self.tournament_selection(
+                    self.population, k=2, tournsize=self.tournsize
+                )
 
                 # clone the 2 parents in the new offspring
                 offspring.append(self.clone_individual(parents[0]))
@@ -527,16 +552,27 @@ class GeneticOptimizer:
         return self.find_best()
 
 
-if __name__ == "__main__":
-    game_runner = GameRunner(PlayerController(LAYER_NODES), enemies=[ENEMY], headless=True)
+def run_optimization(run_number):
+    """
+    Runs the experiment
+    """
+    game_runner = GameRunner(
+        PlayerController(LAYER_NODES), enemies=[ENEMY], headless=True
+    )
     optimizer = GeneticOptimizer(
-        population_size=POPULATION_SIZE, generations=GENERATIONS, game_runner=game_runner
+        population_size=POPULATION_SIZE,
+        generations=GENERATIONS,
+        game_runner=game_runner,
+        run_number=run_number,
     )
     best_individual = optimizer.evolve()
     if not optimizer.parallel:
-
         # save the best individual in the best_individual.txt file
-        best_individual_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "best_individual_run_" + str(N_RUN) + ".txt")
+        best_individual_path = os.path.join(
+            RUNS_DIR,
+            "enemy_" + str(ENEMY),
+            "best_individual_run_" + str(run_number) + ".txt",
+        )
         np.savetxt(best_individual_path, best_individual["weights_and_biases"])
         print(
             f"Evolution is finished! I saved the best individual in {best_individual_path} "
@@ -545,5 +581,15 @@ if __name__ == "__main__":
 
         # save the logbook in a csv file
         logbook = optimizer.getLogbook()
-        logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "logbook_run_" + str(N_RUN) + ".csv")
-        pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=True, index_label="n_gen", sep=";")
+        logbook_path = os.path.join(
+            RUNS_DIR,
+            "enemy_" + str(ENEMY),
+            "logbook_run_" + str(run_number) + ".csv",
+        )
+        pd.DataFrame.from_dict(logbook, orient="index").to_csv(
+            logbook_path, index=True, index_label="n_gen", sep=";"
+        )
+
+
+if __name__ == "__main__":
+    run_optimization(N_RUN)
