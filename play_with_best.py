@@ -11,7 +11,7 @@ import numpy as np
 import glob
 import re
 
-ENEMY = 5
+ENEMY = 8
 RUNS_DIR = "ea1_runs"
 N_GAMES = 2
 BEST_INDIVIDUAL_PATTERN = "best_individual_run_"

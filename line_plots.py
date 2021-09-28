@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
-ENEMY = 3
+ENEMY = 5
 RUNS_DIR = "ea1_runs"
 LOGBOOK_PATTERN = "logbook_run_"
 
@@ -42,9 +42,9 @@ def line_plot(statistics):
     fig, ax = plt.subplots(1)
     ax.plot(x, statistics['mean_avg_fitness'], marker='o', linestyle='dashed', lw=2, label='mean avg fitness', color='blue')
     ax.plot(x, statistics['mean_max_fitness'], marker='o', linestyle='dashed', lw=2, label='mean max fitness', color='red')
-    ax.fill_between(x, avg_fitness_lower_bound, avg_fitness_upper_bound, facecolor='blue', alpha=0.5,
+    ax.fill_between(x, avg_fitness_lower_bound, avg_fitness_upper_bound, facecolor='blue', alpha=0.3,
                     label='std avg fitness')
-    ax.fill_between(x, max_fitness_lower_bound, max_fitness_upper_bound, facecolor='red', alpha=0.5,
+    ax.fill_between(x, max_fitness_lower_bound, max_fitness_upper_bound, facecolor='red', alpha=0.3,
                     label='std max fitness')
     #ax.errorbar(x, statistics['mean_avg_fitness'], yerr=statistics['std_avg_fitness'], marker='o', linestyle='dashed', lw=2, label='mean avg fitness', color='blue')
     #ax.errorbar(x, statistics['mean_max_fitness'], yerr=statistics['std_max_fitness'], marker='o', linestyle='dashed', lw=2, label='mean max fitness', color='red')

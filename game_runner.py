@@ -49,6 +49,7 @@ class GameRunner:
                 level=self.level,
                 speed=self.speed,
                 logs="off",
+                savelogs="no",
                 sound="off",
                 randomini="yes",
             )

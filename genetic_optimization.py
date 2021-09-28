@@ -10,25 +10,25 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 import pandas as pd
 
-N_RUN = 1
-ENEMY = 3
+N_RUN = 3
+ENEMY = 8
 RUNS_DIR = "ea1_runs"
 
 
 # We can now fix the number of nodes to be used in our NN. The first HAS TO BE the number of inputs.
 LAYER_NODES = [20, 20, 24, 5]
 # Then, we can instantiate the Genetic Hyperparameters.
-CX_PROBABILITY = 0.65
+CX_PROBABILITY = 0.75
 CX_ALPHA = 0.45
-MUT_PROBABILITY = 0.89
+MUT_PROBABILITY = 0.62
 MUT_MU = 0
 MUT_STEP_SIZE = 1.0
 MUT_INDPB = 0.70
-POPULATION_SIZE = 3
-GENERATIONS = 10
-SAVING_FREQUENCY = 3
-TOURNSIZE = 3
-LAMBDA = 3  # literature advise to use LAMBDA=5-7
+POPULATION_SIZE = 10
+GENERATIONS = 25
+SAVING_FREQUENCY = 5
+TOURNSIZE = 10
+LAMBDA = 7  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
 EPSILON_UNCORRELATED_MUTATION = 1.0e-6
