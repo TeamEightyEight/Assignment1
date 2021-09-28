@@ -17,8 +17,11 @@ import pickle
 import csv
 
 
+#ENEMIES = [2,5,8]
 ENEMIES = [2]
-GENERATIONS = 13
+GENERATIONS = 2
+RUNS_DIR = 'ea2_runs'
+NUM_RUNS = 2
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -59,7 +62,7 @@ if __name__ == "__main__":
             os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 
-        for run_number in range(1,11):
+        for run_number in range(1,NUM_RUNS+1):
             env = Environment(experiment_name=experiment_name,
                               enemies=[ENEMY],
                               playermode="ai",
@@ -67,7 +70,9 @@ if __name__ == "__main__":
                               enemymode="static",
                               randomini = 'yes',
                               level=2,
-                              speed="fastest")
+                              speed="fastest",
+                              savelogs="no",
+                              logs="off")
 
             env.state_to_log()
             ini = time.time()  # sets time marker
@@ -78,7 +83,7 @@ if __name__ == "__main__":
                 neat.DefaultReproduction,
                 neat.DefaultSpeciesSet,
                 neat.DefaultStagnation,
-                'config-feedforward2')
+                'config-feedforward')
 
             # Create the population, which is the top-level object for a NEAT run.
             p = CoolPopulation88(config)
@@ -92,31 +97,39 @@ if __name__ == "__main__":
             # Display the winning genome.
             print("\nbest_ever: {!s}".format(best_ever.fitness))
 
+            base_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY))
+            os.makedirs(
+                base_path,
+                exist_ok=True,
+            )
+
+
             # Dumping the updated winners list to the file
-            pickle_file_name = 'run%d_enemy%d_ea2_pickleBest'% (run_number,ENEMY)
-            with open('neat_results2/'+pickle_file_name, 'wb') as pickle_out:
+            pickle_file_name = 'best_individual_run_%d'% (run_number)
+
+            with open(os.path.join(base_path, pickle_file_name), 'wb') as pickle_out:
                 #pickle.dump(winners, pickle_out)
                 pickle.dump(best_ever, pickle_out)
 
-            with open('neat_results2/'+pickle_file_name, mode='rb') as pickle_in:
-                best_pickle = pickle.load(pickle_in)
+            
+            ##with open('neat_results2/'+pickle_file_name, mode='rb') as pickle_in:
+            #    best_pickle = pickle.load(pickle_in)
     
 
-            #Now, for the best individual in the all generations, we run it 5 times and obtain his individual gain for each run
-            print("\n#######################################\n")
-            box_plot_file_name = 'enemy%d_ea2.txt' % (ENEMY)
+            ##Now, for the best individual in the all generations, we run it 5 times and obtain his individual gain for each run
+            #box_plot_file_name = 'enemy%d_ea2.txt' % (ENEMY)
 
-            with open('neat_results2/'+box_plot_file_name, mode='a', newline='') as box_plot_file:
-                box_plot_writer = csv.writer(box_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
+            #with open('neat_results2/'+box_plot_file_name, mode='a', newline='') as box_plot_file:
+            #    box_plot_writer = csv.writer(box_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
             
-                individual_gains = []
+            #    individual_gains = []
 
-                for i in range(0,5):
-                    individual_gain = best_individual_run(best_pickle,config)
-                    individual_gains.append(individual_gain)
+            #    for i in range(0,5):
+            #        individual_gain = best_individual_run(best_pickle,config)
+            #        individual_gains.append(individual_gain)
 
-                print(individual_gains)
-                box_plot_writer.writerow(individual_gains)
-
+            #    print(individual_gains)
+            #    box_plot_writer.writerow(individual_gains)
+            
 
 
