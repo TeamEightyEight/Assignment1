@@ -18,7 +18,7 @@ import csv
 
 
 #ENEMIES = [2,5,8]
-ENEMIES = [2]
+ENEMIES = [2,3]
 GENERATIONS = 2
 RUNS_DIR = 'ea2_runs'
 NUM_RUNS = 2
