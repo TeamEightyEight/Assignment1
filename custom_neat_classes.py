@@ -7,11 +7,13 @@ from neat.six_util import iteritems, itervalues
 
 import time
 import csv
+import os
 
 from neat.math_util import mean, stdev
 from neat.six_util import itervalues, iterkeys
 
 # TODO: Add a curses-based reporter.
+RUNS_DIR = 'ea2_runs'
 
 class CompleteExtinctionException(Exception):
     pass
@@ -346,13 +348,21 @@ class CoolReporter88(BaseReporter):
 
     def final_plot_report(self):
 
-        csv_file_name = 'run%d_enemy%d_ea2.txt' % (self.run_number,self.enemy)
+        base_path = os.path.join(RUNS_DIR, "enemy_" + str(self.enemy))
+        os.makedirs(
+            base_path,
+            exist_ok=True,
+        )
+        
+        csv_file_name = f"logbook_run_{self.run_number}.csv"
 
-        with open('neat_results2/'+csv_file_name, mode='w', newline='') as line_plot_file:
+        with open(os.path.join(base_path,csv_file_name), mode='w', newline='') as line_plot_file:
             line_plot_writer = csv.writer(line_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
             
             print("  n_gen  max_fitness  mean_fitness  best_individual_gain")
             print("  =====  ===========  ============  ====================")
+            
+            line_plot_writer.writerow(['n_gen','max_fitness','avg_fitness','best_individual_gain'])
             for gen_values in self.final_report_list:
                 print("    {0}      {1:3.5f}     {2:3.5f}     {3}".format(gen_values['generation'],
                                                                    gen_values['max_fitness'],
