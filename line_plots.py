@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
-ENEMY = 5
+ENEMY = 8
 RUNS_DIR = "ea1_runs"
 LOGBOOK_PATTERN = "logbook_run_"
 

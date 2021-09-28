@@ -7,9 +7,9 @@ import pandas as pd
 from matplotlib.ticker import MaxNLocator
 from ast import literal_eval
 
-ENEMY = 5
+ENEMY = 8
 RUNS_DIR = "ea1_runs"
-FILE_NAME = "games_played2.csv"
+FILE_NAME = "games_played.csv"
 
 
 def read_files(dir_path):

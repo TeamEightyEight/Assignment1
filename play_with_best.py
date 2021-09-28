@@ -13,7 +13,7 @@ import re
 
 ENEMY = 8
 RUNS_DIR = "ea1_runs"
-N_GAMES = 2
+N_GAMES = 5
 BEST_INDIVIDUAL_PATTERN = "best_individual_run_"
 
 # Update the number of neurons for the controller used
@@ -31,7 +31,7 @@ def init_env(enemy, layer_nodes):
         enemies=[ENEMY],
         playermode="ai",
         player_controller=PlayerController(layer_nodes),
-        speed="normal",
+        speed="fastest",
         enemymode="static",
         level=2,
         logs="off",
@@ -61,7 +61,7 @@ def main():
     for file in glob.glob(pattern):
 
         # extract the number of the run from the file name
-        n_run = re.search("[0-9]", os.path.basename(file)).group(0)
+        n_run = re.search("[0-9]+", os.path.basename(file)).group(0)
         print(f"RUN {n_run}:")
 
         # load the best individual
@@ -76,8 +76,7 @@ def main():
         # save the results of the games of the current run
         logbook[n_run] = {"individual_gains":individual_gains}
 
-    logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "games_played2.csv")
-    print(pd.DataFrame.from_dict(logbook, orient='index'))
+    logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "games_played.csv")
     pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=True, index_label='n_run', sep=";")
     print(
         f"Results of the games saved in {logbook_path} "
