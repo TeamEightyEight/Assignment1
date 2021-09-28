@@ -112,24 +112,7 @@ if __name__ == "__main__":
                 pickle.dump(best_ever, pickle_out)
 
             
-            ##with open('neat_results2/'+pickle_file_name, mode='rb') as pickle_in:
-            #    best_pickle = pickle.load(pickle_in)
-    
 
-            ##Now, for the best individual in the all generations, we run it 5 times and obtain his individual gain for each run
-            #box_plot_file_name = 'enemy%d_ea2.txt' % (ENEMY)
-
-            #with open('neat_results2/'+box_plot_file_name, mode='a', newline='') as box_plot_file:
-            #    box_plot_writer = csv.writer(box_plot_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
-            
-            #    individual_gains = []
-
-            #    for i in range(0,5):
-            #        individual_gain = best_individual_run(best_pickle,config)
-            #        individual_gains.append(individual_gain)
-
-            #    print(individual_gains)
-            #    box_plot_writer.writerow(individual_gains)
             
 
 
