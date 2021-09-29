@@ -7,7 +7,7 @@ import pandas as pd
 from matplotlib.ticker import MaxNLocator
 from ast import literal_eval
 
-ENEMY = 8
+ENEMY = 5
 RUNS_DIR = "ea1_runs"
 FILE_NAME = "games_played.csv"
 
