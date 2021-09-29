@@ -3,18 +3,18 @@
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 100
-pop_size              = 10
+pop_size              = 97
 reset_on_extinction   = False
 
 [DefaultGenome]
 # node activation options
 activation_default      = sigmoid
-activation_mutate_rate  = 0.5
+activation_mutate_rate  = 0.38
 activation_options      = sigmoid
 
 # node aggregation options
 aggregation_default     = sum
-aggregation_mutate_rate = 0.5
+aggregation_mutate_rate = 0.18
 aggregation_options     = sum
 
 # node bias options
@@ -31,15 +31,15 @@ bias_replace_rate       = 0.1
 compatibility_disjoint_coefficient = 1.0
 #The coefficient for each weight, bias, or response multiplier difference�s contribution to the genomic distance
 #original 0.5
-compatibility_weight_coefficient   = 0.4 
+compatibility_weight_coefficient   = 0.22
 
 # connection add/remove rates
-conn_add_prob           = 0.5
-conn_delete_prob        = 0.5
+conn_add_prob           = 0.92
+conn_delete_prob        = 0.56
 
 # connection enable options
 enabled_default         = True
-enabled_mutate_rate     = 0.01
+enabled_mutate_rate     = 0.3
 
 feed_forward            = True
 initial_connection      = full_direct
@@ -47,11 +47,11 @@ initial_connection      = full_direct
 
 # node add/remove rates
 #original 0.2
-node_add_prob           = 0.3
-node_delete_prob        = 0.3
+node_add_prob           = 0.36
+node_delete_prob        = 0.95
 
 # network parameters
-num_hidden              = 10
+num_hidden              = 13
 num_inputs              = 20
 num_outputs             = 5
 
@@ -71,8 +71,8 @@ weight_max_value        = 30
 weight_min_value        = -30
 weight_mutate_power     = 0.5
 #original 0.8
-weight_mutate_rate      = 0.9
-weight_replace_rate     = 0.1
+weight_mutate_rate      = 0.67
+weight_replace_rate     = 0.35
 
 [DefaultSpeciesSet]
 #Individuals whose genomic distance is less than this threshold are considered to be in the same species.
