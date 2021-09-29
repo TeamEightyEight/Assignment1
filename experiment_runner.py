@@ -1,17 +1,19 @@
 from multiprocessing import Pool
 from genetic_optimization import run_optimization
 
+START_RUN = 1
+END_RUN = 10
+ENEMY = 3
 
-def run_experiment(experiment_no):
+
+def run_experiment(run_number):
     """
-    Runs an experiment with the default hyperparams
-        :param experiment_no: number of the experiment for the logs
+    Runs an experiment with the default hyperparameters
+        :param run_number: number of the run for the logs
     """
-    run_optimization(experiment_no)
+    return run_optimization(run_number, ENEMY)
 
 
 if __name__ == "__main__":
-    start = int(input("Enter the start run no.: "))
-    end = int(input("Enter the end run no.: "))
     with Pool(12) as p:
-        p.map(run_experiment, range(start, end + 1))
+        p.map(run_experiment, range(START_RUN, END_RUN + 1))

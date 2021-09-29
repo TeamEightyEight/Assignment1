@@ -10,8 +10,8 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 import pandas as pd
 
-N_RUN = 3
-ENEMY = 8
+N_RUN = 11
+ENEMY = 3
 RUNS_DIR = "ea1_runs"
 
 
@@ -27,7 +27,7 @@ MUT_INDPB = 0.70
 POPULATION_SIZE = 75
 GENERATIONS = 25
 SAVING_FREQUENCY = 5
-TOURNSIZE = 10
+TOURNSIZE = 7
 LAMBDA = 7  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
@@ -552,12 +552,12 @@ class GeneticOptimizer:
         return self.find_best()
 
 
-def run_optimization(run_number):
+def run_optimization(run_number, enemy):
     """
     Runs the experiment
     """
     game_runner = GameRunner(
-        PlayerController(LAYER_NODES), enemies=[ENEMY], headless=True
+        PlayerController(LAYER_NODES), enemies=[enemy], headless=True
     )
     optimizer = GeneticOptimizer(
         population_size=POPULATION_SIZE,
@@ -592,4 +592,4 @@ def run_optimization(run_number):
 
 
 if __name__ == "__main__":
-    run_optimization(N_RUN)
+    run_optimization(N_RUN, ENEMY)
