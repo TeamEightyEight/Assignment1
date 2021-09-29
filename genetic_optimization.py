@@ -11,7 +11,7 @@ from tabulate import tabulate
 import pandas as pd
 
 N_RUN = 11
-ENEMY = 3
+ENEMY = 1
 RUNS_DIR = "ea1_runs"
 
 
@@ -43,7 +43,7 @@ class GeneticOptimizer:
     def __init__(
         self,
         game_runner,
-        enemy=ENEMY,
+        enemy,
         generations=GENERATIONS,
         layer_nodes=LAYER_NODES,
         cx_probability=CX_PROBABILITY,
@@ -212,7 +212,7 @@ class GeneticOptimizer:
         # Create the checkpoint directory  if it does not exist
         if not self.parallel:
             os.makedirs(
-                os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), self.checkpoint),
+                os.path.join(RUNS_DIR, "enemy_" + str(self.enemy), self.checkpoint),
                 exist_ok=True,
             )
 
