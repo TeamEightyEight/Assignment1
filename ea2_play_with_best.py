@@ -15,7 +15,7 @@ import pickle
 import neat
 
 
-ENEMY = 2
+ENEMY = 3
 RUNS_DIR = "ea2_runs"
 N_GAMES = 5
 BEST_INDIVIDUAL_PATTERN = "best_individual_run_"
@@ -69,11 +69,12 @@ def main():
 
     # iterate across the runs
     pattern = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), BEST_INDIVIDUAL_PATTERN + "*[0-9]")
+    print(pattern)
     for file_name in glob.glob(pattern):
         print(file_name)
 
         # extract the number of the run from the file name
-        n_run = re.search("[0-9]", os.path.basename(file_name)).group(0)
+        n_run = re.search("[0-9]+", os.path.basename(file_name)).group(0)
         print(f"RUN {n_run}:")
 
         # load the best individual
