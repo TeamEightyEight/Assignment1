@@ -67,9 +67,7 @@ def main():
 
     # iterate across the runs
     pattern = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), BEST_INDIVIDUAL_PATTERN + "*[0-9]")
-    print(pattern)
     for file_name in glob.glob(pattern):
-        print(file_name)
 
         # extract the number of the run from the file name
         n_run = re.search("[0-9]+", os.path.basename(file_name)).group(0)
@@ -88,7 +86,6 @@ def main():
         logbook[n_run] = {"individual_gains":individual_gains}
 
     logbook_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), "games_played.csv")
-    print(pd.DataFrame.from_dict(logbook, orient='index'))
     pd.DataFrame.from_dict(logbook, orient='index').to_csv(logbook_path, index=True, index_label='n_run', sep=";")
     print(
         f"Results of the games saved in {logbook_path} "

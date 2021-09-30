@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import os
-import glob
+import seaborn as sns
 
 import numpy as np
 import pandas as pd
@@ -8,16 +8,12 @@ from ast import literal_eval
 
 import scipy.stats as stats
 
-ENEMY = 2
-RUNS_DIR = "ea1_runs"
+ENEMY = 8
+EA_DIRS = ["approach1", "approach2"]
+RUNS_DIR = "runs"
 FILE_NAME = "games_played.csv"
-
-
-def read_files(dir_path):
-    """
-    Read the call the files in the folder and return a list of dataframes.
-    """
-    return [pd.read_csv(file) for file in glob.glob(os.path.join(dir_path, "logbook_run_*.csv"))]
+PLOTS_DIR = "plots"
+PLOT_RESULT_NAME = "box_plot_enemy_"
 
 
 def statistics_across_generations(data):
@@ -31,43 +27,41 @@ def statistics_across_generations(data):
     return pd.concat([df_avg, df_max], axis=1)
 
 
-def boxplot(data):
-    """
-    Plot the box plots of the played games.
-    """
-    x = data['n_run']
-
-    fig, ax = plt.subplots(1)
-    ax.boxplot(data['individual_gains'])
-    ax.legend(loc='best')
-    ax.set_xlabel('')
-    ax.set_ylabel('individual gain')
-    ax.grid()
-    plt.show()
-
-
 def main():
     # read the csv file containing the results of played games
-    file_path = os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), FILE_NAME)
-    df_games = pd.read_csv(file_path, sep=";")
+    ea1_file_path = os.path.join(EA_DIRS[0], RUNS_DIR, "enemy_" + str(ENEMY), FILE_NAME)
+    ea2_file_path = os.path.join(EA_DIRS[1], RUNS_DIR, "enemy_" + str(ENEMY), FILE_NAME)
+
+    ea1_df_games = pd.read_csv(ea1_file_path, sep=";")
+    ea2_df_games = pd.read_csv(ea2_file_path, sep=";")
 
     # convert the element inside the column 'individual_gains' to an array
-    df_games['individual_gains'] = df_games['individual_gains'].apply(literal_eval)
+    ea1_df_games['individual_gains'] = ea1_df_games['individual_gains'].apply(literal_eval)
+    ea2_df_games['individual_gains'] = ea2_df_games['individual_gains'].apply(literal_eval)
 
     # compute the mean of the individual_gains for each run
-    df_games['individual_gains'] = df_games['individual_gains'].map(lambda x: np.array(x).mean())
+    ea1_df_games['individual_gains'] = ea1_df_games['individual_gains'].map(lambda x: np.array(x).mean())
+    ea2_df_games['individual_gains'] = ea2_df_games['individual_gains'].map(lambda x: np.array(x).mean())
+
+    df = pd.concat([ea1_df_games['individual_gains'], ea2_df_games['individual_gains']]
+                      , axis=1, keys=['Approach1', 'Approach2'])
+
+    # compute statistic test
+    t_statistic = stats.ttest_ind(df['Approach1'], df['Approach2'])
 
     # show box plot
-    boxplot(df_games)
+    palette = {"Approach1": "blue", "Approach2": "red"}
+    ax = sns.boxplot(data = df, palette=palette)
+    ax.set(ylabel='Individual gain'
+           , xlabel=f'Enemy {ENEMY}'
+           , title=f'T-statistic = {t_statistic.statistic:.2f}, p-value = {t_statistic.pvalue:.2f}')
+    plt.show()
 
-    print(stats.ttest_ind(df_games['individual_gains'],
-                df_games['individual_gains'])
-    )
-
-
-
-
-
+    # save plot
+    plot_file_name = os.path.join(PLOTS_DIR, PLOT_RESULT_NAME + str(ENEMY))
+    os.makedirs(PLOTS_DIR, exist_ok=True)
+    ax.get_figure().savefig(plot_file_name, bbox_inches='tight')
+    print(f"Plot saved in {plot_file_name}")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 import sys, os
-
 import pandas as pd
 
 sys.path.insert(0, "evoman")
@@ -11,7 +10,7 @@ import numpy as np
 import glob
 import re
 
-ENEMY = 2
+ENEMY = 8
 RUNS_DIR = "runs"
 N_GAMES = 5
 BEST_INDIVIDUAL_PATTERN = "best_individual_run_"
