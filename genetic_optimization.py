@@ -25,8 +25,8 @@ MUT_MU = 0
 MUT_STEP_SIZE = 1.0
 MUT_INDPB = 0.70
 POPULATION_SIZE = 75
-GENERATIONS = 25
-SAVING_FREQUENCY = 5
+GENERATIONS = 1
+SAVING_FREQUENCY = 1
 TOURNSIZE = 7
 LAMBDA = 7  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
@@ -410,7 +410,7 @@ class GeneticOptimizer:
         best_gain_along_generations = np.array(
             [
                 self.logbook[i]["best_individual"]["individual_gain"]
-                for i in range(self.generations)
+                for i in range(self.start_gen+self.generations)
             ]
         )
 
@@ -437,34 +437,19 @@ class GeneticOptimizer:
         # First, evaluate the whole population's fitnesses
         self.evaluate_fitness_for_individuals(self.population)
 
+        # store the initial statistics about population 0 in the logbook
+        self.logbook[self.start_gen] = self.evaluate_stats(self.population)
+
         # start the evolution across the generations
         for g in tqdm(
-            range(self.generations),
+            range(self.start_gen+1, self.start_gen+self.generations),
             desc=f"Run with nodes: {self.layer_nodes}",
             leave=False,
         ):
             if not self.parallel:
                 print(
-                    f"\n👨‍👩‍👧 Generation {g} is about to give birth to children! 👨‍👩‍👧"
+                    f"\n👨‍👩‍👧 Generation {g-1} is about to give birth to children! 👨‍👩‍👧"
                 )
-            # We save every SAVING_FREQUENCY generations.
-            if g % SAVING_FREQUENCY == 0 and not self.parallel:
-                # Fill the dictionary using the dict(key=value[, ...]) constructor
-                cp = dict(
-                    population=self.population,
-                    generation=g,
-                    logbook=self.logbook,
-                    rndstate=random.getstate(),
-                )
-
-                checkpoint_path = os.path.join(
-                    RUNS_DIR,
-                    "enemy_" + str(self.enemy),
-                    self.checkpoint,
-                    self.checkpoint + "_run_" + str(self.run_number) + ".dat",
-                )
-                with open(checkpoint_path, "wb") as cp_file:
-                    pickle.dump(cp, cp_file)
 
             # if the fitness sharing is enabled, you have to compute it for the new population
             if self.niche_size > 0:
@@ -544,6 +529,25 @@ class GeneticOptimizer:
 
             # The population is entirely replaced by the offspring
             self.population = offspring
+
+            # We save every SAVING_FREQUENCY generations.
+            if g % SAVING_FREQUENCY == 0 and not self.parallel:
+                # Fill the dictionary using the dict(key=value[, ...]) constructor
+                cp = dict(
+                    population=self.population,
+                    generation=g,
+                    logbook=self.logbook,
+                    rndstate=random.getstate(),
+                )
+
+                checkpoint_path = os.path.join(
+                    RUNS_DIR,
+                    "enemy_" + str(self.enemy),
+                    self.checkpoint,
+                    self.checkpoint + "_run_" + str(self.run_number) + ".dat",
+                )
+                with open(checkpoint_path, "wb") as cp_file:
+                    pickle.dump(cp, cp_file)
 
             # Compute the stats for the generation, and save them to the logbook.
             self.record = self.evaluate_stats(self.population)

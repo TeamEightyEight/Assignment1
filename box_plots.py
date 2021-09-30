@@ -7,7 +7,9 @@ import pandas as pd
 from matplotlib.ticker import MaxNLocator
 from ast import literal_eval
 
-ENEMY = 5
+import scipy.stats as stats
+
+ENEMY = 8
 RUNS_DIR = "ea1_runs"
 FILE_NAME = "games_played.csv"
 
@@ -58,6 +60,10 @@ def main():
 
     # show box plot
     boxplot(df_games)
+
+    print(stats.ttest_ind(df_games['individual_gains'],
+                df_games['individual_gains'])
+    )
 
 
 
