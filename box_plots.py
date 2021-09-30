@@ -4,12 +4,11 @@ import glob
 
 import numpy as np
 import pandas as pd
-from matplotlib.ticker import MaxNLocator
 from ast import literal_eval
 
 import scipy.stats as stats
 
-ENEMY = 8
+ENEMY = 2
 RUNS_DIR = "ea1_runs"
 FILE_NAME = "games_played.csv"
 

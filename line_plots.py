@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
-ENEMY = 8
+ENEMY = 2
 RUNS_DIR = "ea1_runs"
 LOGBOOK_PATTERN = "logbook_run_"
 
@@ -48,6 +48,7 @@ def line_plot(statistics):
                     label='std max fitness')
 
     ax.legend(loc='best')
+    ax.set_ylim(min(statistics['mean_avg_fitness'][1:]-1), max(statistics['mean_max_fitness'])+1)
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel('generations')
     ax.set_ylabel('fitness')
