@@ -10,8 +10,8 @@ from scipy.spatial import distance_matrix
 from tabulate import tabulate
 import pandas as pd
 
-N_RUN = 3
-ENEMY = 8
+N_RUN = 11
+ENEMY = 1
 RUNS_DIR = "ea1_runs"
 
 
@@ -27,7 +27,7 @@ MUT_INDPB = 0.70
 POPULATION_SIZE = 75
 GENERATIONS = 25
 SAVING_FREQUENCY = 5
-TOURNSIZE = 10
+TOURNSIZE = 7
 LAMBDA = 7  # literature advise to use LAMBDA=5-7
 MIN_VALUE_INDIVIDUAL = -1
 MAX_VALUE_INDIVIDUAL = 1
@@ -43,6 +43,7 @@ class GeneticOptimizer:
     def __init__(
         self,
         game_runner,
+        enemy,
         generations=GENERATIONS,
         layer_nodes=LAYER_NODES,
         cx_probability=CX_PROBABILITY,
@@ -62,6 +63,7 @@ class GeneticOptimizer:
         """
         Initializes the Genetic Optimizer.
             :param layer_nodes: The number of nodes in each layer. (list)
+            :param enemy: Number of the enemy to defeat. (int)
             :param generations: The number of generations to run the GA for. (int)
             :param cx_probability: The probability of crossover. (float, 0<=x<=1)
             :param cx_alpha: Parameter of the crossover. Extent of the interval in which the new values can be drawn
@@ -80,6 +82,7 @@ class GeneticOptimizer:
         """
         self.layer_nodes = layer_nodes
         self.checkpoint = checkpoint
+        self.enemy = enemy
         self.generations = generations
         # The biases have to be the same amount of the nodes
         self.bias_no = np.sum(self.layer_nodes) - self.layer_nodes[0]
@@ -209,7 +212,7 @@ class GeneticOptimizer:
         # Create the checkpoint directory  if it does not exist
         if not self.parallel:
             os.makedirs(
-                os.path.join(RUNS_DIR, "enemy_" + str(ENEMY), self.checkpoint),
+                os.path.join(RUNS_DIR, "enemy_" + str(self.enemy), self.checkpoint),
                 exist_ok=True,
             )
 
@@ -222,7 +225,7 @@ class GeneticOptimizer:
 
         checkpoint_path = os.path.join(
             RUNS_DIR,
-            "enemy_" + str(ENEMY),
+            "enemy_" + str(self.enemy),
             self.checkpoint,
             self.checkpoint + "_run_" + str(self.run_number) + ".dat",
         )
@@ -456,7 +459,7 @@ class GeneticOptimizer:
 
                 checkpoint_path = os.path.join(
                     RUNS_DIR,
-                    "enemy_" + str(ENEMY),
+                    "enemy_" + str(self.enemy),
                     self.checkpoint,
                     self.checkpoint + "_run_" + str(self.run_number) + ".dat",
                 )
@@ -552,15 +555,16 @@ class GeneticOptimizer:
         return self.find_best()
 
 
-def run_optimization(run_number):
+def run_optimization(run_number, enemy):
     """
     Runs the experiment
     """
     game_runner = GameRunner(
-        PlayerController(LAYER_NODES), enemies=[ENEMY], headless=True
+        PlayerController(LAYER_NODES), enemies=[enemy], headless=True
     )
     optimizer = GeneticOptimizer(
         population_size=POPULATION_SIZE,
+        enemy=enemy,
         generations=GENERATIONS,
         game_runner=game_runner,
         run_number=run_number,
@@ -570,7 +574,7 @@ def run_optimization(run_number):
         # save the best individual in the best_individual.txt file
         best_individual_path = os.path.join(
             RUNS_DIR,
-            "enemy_" + str(ENEMY),
+            "enemy_" + str(enemy),
             "best_individual_run_" + str(run_number) + ".txt",
         )
         np.savetxt(best_individual_path, best_individual["weights_and_biases"])
@@ -583,7 +587,7 @@ def run_optimization(run_number):
         logbook = optimizer.getLogbook()
         logbook_path = os.path.join(
             RUNS_DIR,
-            "enemy_" + str(ENEMY),
+            "enemy_" + str(enemy),
             "logbook_run_" + str(run_number) + ".csv",
         )
         pd.DataFrame.from_dict(logbook, orient="index").to_csv(
@@ -592,4 +596,4 @@ def run_optimization(run_number):
 
 
 if __name__ == "__main__":
-    run_optimization(N_RUN)
+    run_optimization(N_RUN, ENEMY)
