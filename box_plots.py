@@ -8,7 +8,7 @@ from ast import literal_eval
 
 import scipy.stats as stats
 
-ENEMY = 5
+ENEMY = 2
 EA_DIRS = ["approach1", "approach2"]
 RUNS_DIR = "runs"
 FILE_NAME = "games_played.csv"
@@ -53,8 +53,7 @@ def main():
     palette = {"Approach1": "blue", "Approach2": "red"}
     ax = sns.boxplot(data = df, palette=palette)
     ax.set(ylabel='Individual gain'
-           , xlabel=f'Enemy {ENEMY}'
-           , title=f'T-statistic = {t_statistic.statistic:.2f}, p-value = {t_statistic.pvalue:.2f}')
+           , title=f'Enemy {ENEMY} (T-statistic = {t_statistic.statistic:.2f}, p-value = {t_statistic.pvalue:.2f})')
     plt.show()
 
     # save plot
