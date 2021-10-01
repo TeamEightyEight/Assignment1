@@ -13,7 +13,7 @@ import pickle
 import neat
 
 
-ENEMY = 5
+ENEMY = 8
 RUNS_DIR = "runs"
 N_GAMES = 5
 BEST_INDIVIDUAL_PATTERN = "best_individual_run_"

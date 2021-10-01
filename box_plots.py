@@ -8,7 +8,7 @@ from ast import literal_eval
 
 import scipy.stats as stats
 
-ENEMY = 2
+ENEMY = 5
 EA_DIRS = ["approach1", "approach2"]
 RUNS_DIR = "runs"
 FILE_NAME = "games_played.csv"
@@ -50,6 +50,7 @@ def main():
     t_statistic = stats.ttest_ind(df['Approach1'], df['Approach2'])
 
     # show box plot
+    sns.set(rc={'figure.figsize': (3,5)})
     palette = {"Approach1": "blue", "Approach2": "red"}
     ax = sns.boxplot(data = df, palette=palette)
     ax.set(ylabel='Individual gain'
