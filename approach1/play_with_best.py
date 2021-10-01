@@ -58,7 +58,6 @@ def main():
     # iterate across the runs
     pattern = os.path.join(RUNS_DIR, 'enemy_' + str(ENEMY), BEST_INDIVIDUAL_PATTERN + "*[0-9].txt")
     for file in glob.glob(pattern):
-
         # extract the number of the run from the file name
         n_run = re.search("[0-9]+", os.path.basename(file)).group(0)
         print(f"RUN {n_run}:")
