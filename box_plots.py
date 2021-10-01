@@ -8,7 +8,7 @@ from ast import literal_eval
 
 import scipy.stats as stats
 
-ENEMY = 8
+ENEMY = 5
 EA_DIRS = ["approach1", "approach2"]
 RUNS_DIR = "runs"
 FILE_NAME = "games_played.csv"
